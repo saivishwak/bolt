@@ -9,6 +9,7 @@ pub struct Lexer<'a> {
     input_chars: Vec<char>,
     pub position: usize,
     pub read_position: usize,
+    curr_line: usize,
     ch: char,
 }
 
@@ -18,6 +19,7 @@ impl<'a> Lexer<'a> {
             input: source,
             input_chars: source.chars().collect(),
             position: 0,
+            curr_line: 0,
             read_position: 0,
             ch: '\0',
         };
@@ -32,8 +34,25 @@ impl<'a> Lexer<'a> {
             self.ch = *self.input_chars.get(self.read_position).unwrap();
         }
 
+        if self.ch == '\n' {
+            self.curr_line += 1;
+        }
+
         self.position = self.read_position;
         self.read_position += 1;
+    }
+
+    fn create_new_token(
+        &self,
+        t_type: token::TokenType,
+        literal: String,
+        line: usize,
+    ) -> token::Token {
+        return token::Token {
+            token_type: t_type,
+            literal: literal,
+            line: line,
+        };
     }
 
     pub fn next_token(&mut self) -> token::Token {
@@ -43,108 +62,125 @@ impl<'a> Lexer<'a> {
             '=' => {
                 if self.peek_char() == '=' {
                     self.read_char();
-                    tok = token::Token {
-                        token_type: token::TokenType::EQ,
-                        literal: String::from("=="),
-                    };
+                    tok = self.create_new_token(
+                        token::TokenType::EQ,
+                        String::from("=="),
+                        self.curr_line,
+                    );
                 } else {
-                    tok = token::Token {
-                        token_type: token::TokenType::ASSIGN,
-                        literal: String::from(self.ch),
-                    };
+                    tok = self.create_new_token(
+                        token::TokenType::ASSIGN,
+                        String::from(self.ch),
+                        self.curr_line,
+                    );
                 }
             }
             '+' => {
-                tok = token::Token {
-                    token_type: token::TokenType::PLUS,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::PLUS,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '-' => {
-                tok = token::Token {
-                    token_type: token::TokenType::MINUS,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::MINUS,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             ';' => {
-                tok = token::Token {
-                    token_type: token::TokenType::SEMICOLON,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::SEMICOLON,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '(' => {
-                tok = token::Token {
-                    token_type: token::TokenType::LPAREN,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::LPAREN,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             ')' => {
-                tok = token::Token {
-                    token_type: token::TokenType::RPAREN,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::RPAREN,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '{' => {
-                tok = token::Token {
-                    token_type: token::TokenType::LBRACE,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::LBRACE,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '}' => {
-                tok = token::Token {
-                    token_type: token::TokenType::RBRACE,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::RBRACE,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             ',' => {
-                tok = token::Token {
-                    token_type: token::TokenType::COMMA,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::COMMA,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '!' => {
                 if self.peek_char() == '=' {
                     self.read_char();
-                    tok = token::Token {
-                        token_type: token::TokenType::NOTEQ,
-                        literal: String::from("!="),
-                    };
+                    tok = self.create_new_token(
+                        token::TokenType::NOTEQ,
+                        String::from("!="),
+                        self.curr_line,
+                    );
                 } else {
-                    tok = token::Token {
-                        token_type: token::TokenType::BANG,
-                        literal: String::from(self.ch),
-                    };
+                    tok = self.create_new_token(
+                        token::TokenType::BANG,
+                        String::from(self.ch),
+                        self.curr_line,
+                    );
                 }
             }
             '/' => {
-                tok = token::Token {
-                    token_type: token::TokenType::SLASH,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::SLASH,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '*' => {
-                tok = token::Token {
-                    token_type: token::TokenType::ASTERISK,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::ASTERISK,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '<' => {
-                tok = token::Token {
-                    token_type: token::TokenType::LT,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::LT,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '>' => {
-                tok = token::Token {
-                    token_type: token::TokenType::GT,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::GT,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             '\0' => {
-                tok = token::Token {
-                    token_type: token::TokenType::EOF,
-                    literal: String::from(self.ch),
-                };
+                tok = self.create_new_token(
+                    token::TokenType::EOF,
+                    String::from(self.ch),
+                    self.curr_line,
+                );
             }
             _ => {
                 // Find if its a letter or digit
@@ -154,6 +190,7 @@ impl<'a> Lexer<'a> {
                     tok = token::Token {
                         token_type: token,
                         literal: String::from(literal),
+                        line: self.curr_line,
                     };
                     return tok;
                 } else if self.is_digit(self.ch) {
@@ -161,12 +198,14 @@ impl<'a> Lexer<'a> {
                     tok = token::Token {
                         token_type: token::TokenType::INT,
                         literal: String::from(literal),
+                        line: self.curr_line,
                     };
                     return tok;
                 } else {
                     tok = token::Token {
                         token_type: token::TokenType::ILLIGAL,
                         literal: String::from('\0'),
+                        line: self.curr_line,
                     }
                 }
             }
@@ -239,8 +278,7 @@ mod lexer_test {
         let add = fn(x, y) {
         x + y;
         };
-        let final_result = add(five, ten);
-        
+        let final_result = add(five, ten); 
         !-/*5;
         5 < 10 > 5;
         if (5 < 10) {
@@ -256,302 +294,377 @@ mod lexer_test {
             Token {
                 token_type: TokenType::LET,
                 literal: String::from("let"),
+                line: 0,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("five"),
+                line: 0,
             },
             Token {
                 token_type: TokenType::ASSIGN,
                 literal: String::from("="),
+                line: 0,
             },
             Token {
                 token_type: TokenType::LPAREN,
                 literal: String::from("("),
+                line: 0,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("5"),
+                line: 0,
             },
             Token {
                 token_type: TokenType::RPAREN,
                 literal: String::from(")"),
+                line: 0,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 0,
             },
             Token {
                 token_type: TokenType::LET,
                 literal: String::from("let"),
+                line: 1,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("ten"),
+                line: 1,
             },
             Token {
                 token_type: TokenType::ASSIGN,
                 literal: String::from("="),
+                line: 1,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("10"),
+                line: 1,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 1,
             },
             Token {
                 token_type: TokenType::LET,
                 literal: String::from("let"),
+                line: 2,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("add"),
+                line: 2,
             },
             Token {
                 token_type: TokenType::ASSIGN,
                 literal: String::from("="),
+                line: 2,
             },
             Token {
                 token_type: TokenType::FUNCTION,
                 literal: String::from("fn"),
+                line: 2,
             },
             Token {
                 token_type: TokenType::LPAREN,
                 literal: String::from("("),
+                line: 2,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("x"),
+                line: 2,
             },
             Token {
                 token_type: TokenType::COMMA,
                 literal: String::from(","),
+                line: 2,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("y"),
+                line: 2,
             },
             Token {
                 token_type: TokenType::RPAREN,
                 literal: String::from(")"),
+                line: 2,
             },
             Token {
                 token_type: TokenType::LBRACE,
                 literal: String::from("{"),
+                line: 2,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("x"),
+                line: 3,
             },
             Token {
                 token_type: TokenType::PLUS,
                 literal: String::from("+"),
+                line: 3,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("y"),
+                line: 3,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 3,
             },
             Token {
                 token_type: TokenType::RBRACE,
                 literal: String::from("}"),
+                line: 4,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 4,
             },
             Token {
                 token_type: TokenType::LET,
                 literal: String::from("let"),
+                line: 5,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("final_result"),
+                line: 5,
             },
             Token {
                 token_type: TokenType::ASSIGN,
                 literal: String::from("="),
+                line: 5,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("add"),
+                line: 5,
             },
             Token {
                 token_type: TokenType::LPAREN,
                 literal: String::from("("),
+                line: 5,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("five"),
+                line: 5,
             },
             Token {
                 token_type: TokenType::COMMA,
                 literal: String::from(","),
+                line: 5,
             },
             Token {
                 token_type: TokenType::IDENTIFIER,
                 literal: String::from("ten"),
+                line: 5,
             },
             Token {
                 token_type: TokenType::RPAREN,
                 literal: String::from(")"),
+                line: 5,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 5,
             },
             Token {
                 token_type: TokenType::BANG,
                 literal: String::from("!"),
+                line: 6,
             },
             Token {
                 token_type: TokenType::MINUS,
                 literal: String::from("-"),
+                line: 6,
             },
             Token {
                 token_type: TokenType::SLASH,
                 literal: String::from("/"),
+                line: 6,
             },
             Token {
                 token_type: TokenType::ASTERISK,
                 literal: String::from("*"),
+                line: 6,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("5"),
+                line: 6,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 6,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("5"),
+                line: 7,
             },
             Token {
                 token_type: TokenType::LT,
                 literal: String::from("<"),
+                line: 7,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("10"),
+                line: 7,
             },
             Token {
                 token_type: TokenType::GT,
                 literal: String::from(">"),
+                line: 7,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("5"),
+                line: 7,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 7,
             },
             Token {
                 token_type: TokenType::IF,
                 literal: String::from("if"),
+                line: 8,
             },
             Token {
                 token_type: TokenType::LPAREN,
                 literal: String::from("("),
+                line: 8,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("5"),
+                line: 8,
             },
             Token {
                 token_type: TokenType::LT,
                 literal: String::from("<"),
+                line: 8,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("10"),
+                line: 8,
             },
             Token {
                 token_type: TokenType::RPAREN,
                 literal: String::from(")"),
+                line: 8,
             },
             Token {
                 token_type: TokenType::LBRACE,
                 literal: String::from("{"),
+                line: 8,
             },
             Token {
                 token_type: TokenType::RETURN,
                 literal: String::from("return"),
+                line: 9,
             },
             Token {
                 token_type: TokenType::TRUE,
                 literal: String::from("true"),
+                line: 9,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 9,
             },
             Token {
                 token_type: TokenType::RBRACE,
                 literal: String::from("}"),
+                line: 10,
             },
             Token {
                 token_type: TokenType::ELSE,
                 literal: String::from("else"),
+                line: 10,
             },
             Token {
                 token_type: TokenType::LBRACE,
                 literal: String::from("{"),
+                line: 10,
             },
             Token {
                 token_type: TokenType::RETURN,
                 literal: String::from("return"),
+                line: 11,
             },
             Token {
                 token_type: TokenType::FALSE,
                 literal: String::from("false"),
+                line: 11,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 11,
             },
             Token {
                 token_type: TokenType::RBRACE,
                 literal: String::from("}"),
+                line: 12,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("10"),
+                line: 13,
             },
             Token {
                 token_type: TokenType::EQ,
                 literal: String::from("=="),
+                line: 13,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("10"),
+                line: 13,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 13,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("10"),
+                line: 14,
             },
             Token {
                 token_type: TokenType::NOTEQ,
                 literal: String::from("!="),
+                line: 14,
             },
             Token {
                 token_type: TokenType::INT,
                 literal: String::from("9"),
+                line: 14,
             },
             Token {
                 token_type: TokenType::SEMICOLON,
                 literal: String::from(";"),
+                line: 14,
             },
         ];
         loop {
