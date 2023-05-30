@@ -2,8 +2,6 @@
 use super::token;
 use regex::Regex;
 
-const KEYWORDS: [&str; 2] = ["let", "fn"];
-
 pub struct Lexer<'a> {
     input: &'a str,
     input_chars: Vec<char>,
@@ -53,6 +51,19 @@ impl<'a> Lexer<'a> {
             literal: literal,
             line: line,
         };
+    }
+
+    pub fn get_tokens(&mut self) -> Vec<token::Token> {
+        let mut tokens: Vec<token::Token> = vec![];
+        loop {
+            let token = self.next_token();
+            let token_type = token.token_type;
+            tokens.push(token);
+            if token_type == token::TokenType::EOF {
+                break;
+            }
+        }
+        tokens
     }
 
     pub fn next_token(&mut self) -> token::Token {
@@ -148,11 +159,22 @@ impl<'a> Lexer<'a> {
                 }
             }
             '/' => {
-                tok = self.create_new_token(
-                    token::TokenType::SLASH,
-                    String::from(self.ch),
-                    self.curr_line,
-                );
+                // Case for comments which needs to be ignored
+                if self.peek_char() == '/' {
+                    loop {
+                        self.read_char();
+                        if self.ch == '\n' {
+                            break;
+                        }
+                    }
+                    return self.next_token();
+                } else {
+                    tok = self.create_new_token(
+                        token::TokenType::SLASH,
+                        String::from(self.ch),
+                        self.curr_line,
+                    );
+                }
             }
             '*' => {
                 tok = self.create_new_token(
@@ -287,7 +309,9 @@ mod lexer_test {
             return false;
         }
         10 == 10;
-        10 != 9;",
+        10 != 9;
+        //comment
+        12;",
         );
         let mut tokens: Vec<Token> = Vec::new();
         let test_tokens = vec![
@@ -666,12 +690,23 @@ mod lexer_test {
                 literal: String::from(";"),
                 line: 14,
             },
+            Token {
+                token_type: TokenType::INT,
+                literal: String::from("12"),
+                line: 16,
+            },
+            Token {
+                token_type: TokenType::SEMICOLON,
+                literal: String::from(";"),
+                line: 16,
+            },
         ];
         loop {
             let token = lexer.next_token();
             if token.token_type == TokenType::EOF {
                 break;
             }
+            println!("{:#?}", token);
             tokens.push(token);
         }
         assert_eq!(tokens, test_tokens);

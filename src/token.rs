@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     EOF,
     ILLIGAL,
