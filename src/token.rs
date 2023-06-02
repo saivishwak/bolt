@@ -8,6 +8,7 @@ pub enum TokenType {
 
     //Identifiers
     IDENTIFIER,
+    STRING,
     INT,
 
     //Operators
@@ -22,6 +23,8 @@ pub enum TokenType {
 
     LT,
     GT,
+    LTEQ,
+    GTEQ,
 
     //Delimeters
     COMMA,
@@ -65,7 +68,7 @@ pub fn lookup_indent(indent: &str) -> TokenType {
     return TokenType::IDENTIFIER;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub literal: String,

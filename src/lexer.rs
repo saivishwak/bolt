@@ -184,23 +184,58 @@ impl<'a> Lexer<'a> {
                 );
             }
             '<' => {
-                tok = self.create_new_token(
-                    token::TokenType::LT,
-                    String::from(self.ch),
-                    self.curr_line,
-                );
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    tok = self.create_new_token(
+                        token::TokenType::LTEQ,
+                        String::from("<="),
+                        self.curr_line,
+                    );
+                } else {
+                    tok = self.create_new_token(
+                        token::TokenType::LT,
+                        String::from(self.ch),
+                        self.curr_line,
+                    );
+                }
             }
             '>' => {
-                tok = self.create_new_token(
-                    token::TokenType::GT,
-                    String::from(self.ch),
-                    self.curr_line,
-                );
+                if self.peek_char() == '=' {
+                    self.read_char();
+                    tok = self.create_new_token(
+                        token::TokenType::GTEQ,
+                        String::from(">="),
+                        self.curr_line,
+                    );
+                } else {
+                    tok = self.create_new_token(
+                        token::TokenType::GT,
+                        String::from(self.ch),
+                        self.curr_line,
+                    );
+                }
             }
             '\0' => {
                 tok = self.create_new_token(
                     token::TokenType::EOF,
                     String::from(self.ch),
+                    self.curr_line,
+                );
+            }
+            '"' => {
+                let start = self.read_position;
+                while self.peek_char() != '"' && !self.is_at_end() {
+                    if self.ch == '\n' {
+                        self.curr_line += 1;
+                    }
+                    self.read_char();
+                }
+                //advance to move next to quote
+                self.read_char();
+                let value = &self.input[start..self.position];
+                tok = self.create_new_token(
+                    token::TokenType::STRING,
+                    String::from(value),
                     self.curr_line,
                 );
             }
@@ -285,6 +320,10 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
         return &self.input[position..self.position];
+    }
+
+    fn is_at_end(&self) -> bool {
+        return self.position == self.input.len();
     }
 }
 
