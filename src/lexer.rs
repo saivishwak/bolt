@@ -316,7 +316,8 @@ impl<'a> Lexer<'a> {
 
     fn read_number(&mut self) -> &str {
         let position = self.position;
-        while self.is_digit(self.ch) {
+        //Adding '.' for float
+        while self.is_digit(self.ch) || self.ch == '.' {
             self.read_char();
         }
         return &self.input[position..self.position];
