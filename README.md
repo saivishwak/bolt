@@ -1,4 +1,10 @@
-# Bolt
+# Bolt Scripting Language
+
+## Todo
+-   [ ] Proper Error Parsing
+-   [ ] Refactor code using better standards
+-   [ ] Add Test Cases
+-   [ ] Add More Expression Parsing - If, return, while
 
 # Bolt specification
 
