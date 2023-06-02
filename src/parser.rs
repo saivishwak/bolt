@@ -64,23 +64,33 @@ impl<'a> Parser<'a> {
         let stmt = ast::LetStatement {
             token: token,
             identifier: identifier,
-            value: expression,
+            value: expression.unwrap(),
         };
         Some(Box::new(stmt))
     }
 
-    fn parse_expression(&mut self) -> Box<ast::Expression> {
-        Box::new(ast::Expression {})
+    fn parse_expression(&mut self) -> Option<Box<dyn ast::Expression>> {
+        self.next_token();
+        let curr_token = self.curr_token.as_ref().unwrap();
+        let expr = match curr_token.token_type {
+            token::TokenType::INT => ast::IntegerLiteral {
+                token: curr_token.clone(),
+                value: curr_token.literal.parse::<f32>().unwrap(),
+            },
+            _ => return None,
+        };
+
+        Some(Box::new(expr))
     }
 
     fn parse_expression_statement(&mut self) -> Option<Box<dyn ast::Statement>> {
-        let expr = self.parse_expression();
+        let _expr = self.parse_expression();
 
         if self.peek_token.as_ref().unwrap().token_type == token::TokenType::SEMICOLON {
             self.next_token();
         }
 
-        Some(expr)
+        None
     }
 
     pub fn parse_program(&mut self) -> ast::Program {

@@ -17,19 +17,14 @@ impl fmt::Debug for dyn Statement {
     }
 }
 
-#[derive(Debug)]
-pub struct Expression {}
-
-impl Node for Expression {
-    fn token_literal(&self) -> String {
-        String::from("value")
-    }
+pub trait Expression: Node {
+    fn print(&self) -> String;
 }
 
-impl Statement for Expression {
-    fn print(&self) -> String {
-        let result = format!("{:?}", self);
-        result
+impl fmt::Debug for dyn Expression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Implement your desired debug output here
+        write!(f, "{}", self.print())
     }
 }
 
@@ -37,7 +32,7 @@ impl Statement for Expression {
 pub struct LetStatement {
     pub token: token::Token,
     pub identifier: Identifier,
-    pub value: Box<Expression>,
+    pub value: Box<dyn Expression>,
 }
 
 impl Node for LetStatement {
@@ -66,6 +61,25 @@ impl Node for Identifier {
 }
 
 impl Statement for Identifier {
+    fn print(&self) -> String {
+        let result = format!("{:?}", self);
+        result
+    }
+}
+
+#[derive(Debug)]
+pub struct IntegerLiteral {
+    pub token: token::Token,
+    pub value: f32,
+}
+
+impl Node for IntegerLiteral {
+    fn token_literal(&self) -> String {
+        return self.token.literal.clone();
+    }
+}
+
+impl Expression for IntegerLiteral {
     fn print(&self) -> String {
         let result = format!("{:?}", self);
         result

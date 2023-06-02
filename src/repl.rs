@@ -18,5 +18,6 @@ pub fn start_repl() -> io::Result<()> {
         let mut parser = parser::Parser::new(&user_input);
         let p = parser.parse_program();
         println!("{:#?}", p.stmts);
+        user_input.clear();
     }
 }
