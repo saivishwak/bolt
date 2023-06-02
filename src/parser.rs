@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use super::ast;
 use super::lexer;
@@ -96,27 +97,75 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self, precedence: i32) -> Option<Box<dyn ast::Expression>> {
         let curr_token = self.curr_token.as_ref().unwrap();
-        let left_expr: Box<dyn Expression> = match curr_token.token_type {
+        let mut left_expr: Box<dyn Expression> = match curr_token.token_type {
             //All prefix parsers
-            token::TokenType::INT => Box::new(ast::IntegerLiteral {
+            TokenType::INT => Box::new(ast::IntegerLiteral {
                 token: curr_token.clone(),
                 value: curr_token.literal.parse::<f32>().unwrap(),
             }),
-            token::TokenType::IDENTIFIER => self.parse_identifier_expression(),
-            token::TokenType::BANG => self.parse_prefix_expression(),
-            token::TokenType::MINUS => self.parse_prefix_expression(),
+            TokenType::IDENTIFIER => self.parse_identifier_expression(),
+            TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
+            TokenType::LPAREN => match self.parse_group_expression() {
+                Some(token) => token,
+                None => {
+                    return None;
+                }
+            },
             _ => return None,
         };
-
-        /*loop {
+        loop {
             if self.peek_token.as_ref().unwrap().token_type != token::TokenType::SEMICOLON
                 && precedence < self.peek_precedence()
             {
-                //
+                let peek_token = self.peek_token.as_ref().unwrap().clone();
+                match peek_token.token_type {
+                    TokenType::PLUS
+                    | TokenType::MINUS
+                    | TokenType::SLASH
+                    | TokenType::ASTERISK
+                    | TokenType::EQ
+                    | TokenType::NOTEQ
+                    | TokenType::GT
+                    | TokenType::LT => {
+                        self.next_token();
+                        left_expr = self.parse_infix_expression(Rc::new(left_expr));
+                    }
+                    _ => {
+                        break;
+                    }
+                }
+            } else {
+                break;
             }
-        }*/
+        }
 
         Some(left_expr)
+    }
+
+    fn parse_group_expression(&mut self) -> Option<Box<dyn Expression>> {
+        self.next_token();
+        let exp = self.parse_expression(LOWEST);
+        if self.peek_token.as_ref().unwrap().clone().token_type != TokenType::RPAREN {
+            self.next_token();
+            return None;
+        }
+        self.next_token();
+        return exp;
+    }
+
+    fn parse_infix_expression(&mut self, left: Rc<Box<dyn Expression>>) -> Box<dyn Expression> {
+        let curr_token = self.curr_token.as_ref().unwrap().clone();
+        let literal = curr_token.literal.clone();
+        let precedence = self.current_precedence();
+        self.next_token();
+        let right = self.parse_expression(precedence).unwrap();
+        let expression = ast::BinaryExpression {
+            token: curr_token,
+            operator: literal,
+            left: left,
+            right: right,
+        };
+        return Box::new(expression);
     }
 
     fn parse_identifier_expression(&mut self) -> Box<dyn ast::Expression> {

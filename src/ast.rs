@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use crate::token;
 use core::fmt::Debug;
+use std::rc::Rc;
 
 pub trait Node {
     fn token_literal(&self) -> String;
@@ -104,7 +105,7 @@ impl Expression for PrefixExpression {}
 pub struct BinaryExpression {
     pub token: token::Token,
     pub operator: String,
-    pub left: Box<dyn Expression>,
+    pub left: Rc<Box<dyn Expression>>,
     pub right: Box<dyn Expression>,
 }
 
