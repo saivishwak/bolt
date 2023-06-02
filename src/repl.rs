@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 use super::parser;
-use crate::lexer;
-use crate::token;
 use std::io;
 
 pub fn start_repl() -> io::Result<()> {
@@ -17,15 +15,7 @@ pub fn start_repl() -> io::Result<()> {
                 return Err(err);
             }
         };
-        let mut l = lexer::Lexer::new(&user_input);
         let mut parser = parser::Parser::new(&user_input);
-        /*loop {
-            let token = l.next_token();
-            if token.token_type == token::TokenType::EOF {
-                break;
-            }
-            println!("{:#?}", token);
-        }*/
         let p = parser.parse_program();
         println!("{:#?}", p.stmts);
     }
