@@ -14,6 +14,7 @@ pub type PrecedenceValue = usize;
 #[derive(Debug)]
 pub enum ParseErrorKind {
     GENERIC,
+    INTERNAL,
 }
 
 #[derive(Debug)]

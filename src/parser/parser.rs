@@ -6,8 +6,8 @@ use super::ast;
 use super::ast::Expression;
 use super::types::{ParseError, ParseErrorKind, PrecedenceValue, Precedences};
 use crate::lexer::lexer;
-use crate::lexer::token;
 use crate::lexer::token::TokenType;
+use crate::lexer::token::{self, Token};
 
 pub struct Parser<'a> {
     pub lexer: lexer::Lexer<'a>,
@@ -49,18 +49,6 @@ impl<'a> Parser<'a> {
         self.peek_token = Some(self.lexer.next_token());
     }
 
-    fn parse_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
-        let curr_token = self.curr_token.as_ref().unwrap();
-        match curr_token.token_type {
-            token::TokenType::LET => {
-                return self.parse_let_statement();
-            }
-            _ => {
-                return self.parse_expression_statement();
-            }
-        }
-    }
-
     fn get_precedence_value(&self, precedence: &str) -> usize {
         let precedence = match precedence {
             "LOWEST" => Precedences::LOWEST,
@@ -75,28 +63,67 @@ impl<'a> Parser<'a> {
         return precedence as usize;
     }
 
-    fn parse_let_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
-        let token = self.curr_token.as_ref().unwrap().clone();
+    fn parse_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
+        let curr_token = self.curr_token.as_ref().unwrap();
+        match curr_token.token_type {
+            token::TokenType::LET => {
+                return self.parse_let_statement();
+            }
+            _ => {
+                return self.parse_expression_statement();
+            }
+        }
+    }
 
-        if self.peek_token.as_ref().unwrap().token_type != token::TokenType::IDENTIFIER {
+    fn current_token(&self) -> Result<Token, ParseError> {
+        let token = match self.curr_token.as_ref() {
+            Some(tok) => Ok(tok.clone()),
+            None => Err(ParseError {
+                message: String::from("Error getting current token"),
+                kind: ParseErrorKind::INTERNAL,
+            }),
+        };
+        token
+    }
+
+    fn expect_peek_token(&mut self) -> Option<TokenType> {
+        let mut flag = false;
+        let peek_token = match self.peek_token.as_ref() {
+            Some(token) => {
+                flag = true;
+                Some(token.token_type)
+            }
+            None => None,
+        };
+        if flag {
+            self.next_token();
+        }
+        peek_token
+    }
+
+    fn parse_let_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
+        let token = self.current_token().unwrap();
+
+        if self.expect_peek_token().unwrap() != token::TokenType::IDENTIFIER {
             return Err(ParseError {
-                message: String::from("Invalid next toekn, expected to have IDENTIFIER"),
+                message: String::from(format!(
+                    "Invalid next token at line {}, expected to have IDENTIFIER",
+                    token.line
+                )),
                 kind: ParseErrorKind::GENERIC,
             });
         }
-        self.next_token();
         let identifier = ast::Identifier {
             token: self.curr_token.as_ref().unwrap().clone(),
             value: self.curr_token.as_ref().unwrap().literal.clone(),
         };
 
-        if self.peek_token.as_ref().unwrap().token_type != token::TokenType::ASSIGN {
+        if self.expect_peek_token().unwrap() != token::TokenType::ASSIGN {
             return Err(ParseError {
                 message: String::from("Invalid next toekn, expected to have = Operator"),
                 kind: ParseErrorKind::GENERIC,
             });
         }
-        self.next_token();
         self.next_token();
         let expression = self.parse_expression(self.get_precedence_value("LOWEST"));
         let stmt = ast::LetStatement {
@@ -111,7 +138,7 @@ impl<'a> Parser<'a> {
         &mut self,
         precedence: usize,
     ) -> Result<Box<dyn ast::Expression>, ParseError> {
-        let curr_token = self.curr_token.as_ref().unwrap();
+        let curr_token = self.current_token().unwrap();
         let mut left_expr: Box<dyn Expression> = match curr_token.token_type {
             //All prefix parsers
             TokenType::INT => Box::new(ast::IntegerLiteral {
@@ -134,7 +161,7 @@ impl<'a> Parser<'a> {
             }
         };
         loop {
-            if self.peek_token.as_ref().unwrap().token_type != token::TokenType::SEMICOLON
+            if self.expect_peek_token().unwrap() != token::TokenType::SEMICOLON
                 && precedence < self.peek_precedence()
             {
                 let peek_token = self.peek_token.as_ref().unwrap().clone();
@@ -147,7 +174,6 @@ impl<'a> Parser<'a> {
                     | TokenType::NOTEQ
                     | TokenType::GT
                     | TokenType::LT => {
-                        self.next_token();
                         left_expr = self.parse_infix_expression(Rc::new(left_expr));
                     }
                     _ => {
@@ -165,19 +191,17 @@ impl<'a> Parser<'a> {
     fn parse_group_expression(&mut self) -> Result<Box<dyn Expression>, ParseError> {
         self.next_token();
         let exp = self.parse_expression(self.get_precedence_value("LOWEST"));
-        if self.peek_token.as_ref().unwrap().clone().token_type != TokenType::RPAREN {
-            self.next_token();
+        if self.expect_peek_token().unwrap() != TokenType::RPAREN {
             return Err(ParseError {
                 message: String::from("Error parsing group"),
                 kind: ParseErrorKind::GENERIC,
             });
         }
-        self.next_token();
         return exp;
     }
 
     fn parse_infix_expression(&mut self, left: Rc<Box<dyn Expression>>) -> Box<dyn Expression> {
-        let curr_token = self.curr_token.as_ref().unwrap().clone();
+        let curr_token = self.current_token().unwrap();
         let literal = curr_token.literal.clone();
         let precedence = self.current_precedence();
         self.next_token();
