@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::token;
+use crate::lexer::token;
 use core::fmt::Debug;
 use std::rc::Rc;
 

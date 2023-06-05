@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use super::parser;
+use crate::parser::parser;
 use std::io;
 
 pub fn start_repl() -> io::Result<()> {
@@ -16,8 +16,9 @@ pub fn start_repl() -> io::Result<()> {
             }
         };
         let mut parser = parser::Parser::new(&user_input);
-        let p = parser.parse_program();
-        println!("{:#?}", p.stmts);
+        if let Ok(p) = parser.parse_program() {
+            println!("{:#?}", p.stmts);
+        }
         user_input.clear();
     }
 }

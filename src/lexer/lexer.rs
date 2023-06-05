@@ -330,7 +330,7 @@ impl<'a> Lexer<'a> {
 
 #[cfg(test)]
 mod lexer_test {
-    use crate::token::{Token, TokenType};
+    use super::token::{Token, TokenType};
 
     #[test]
     fn next_token() {
