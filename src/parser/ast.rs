@@ -57,6 +57,20 @@ impl Node for ReturnStatement {
 impl Statement for ReturnStatement {}
 
 #[derive(Debug)]
+pub struct BlockStatement {
+    pub token: token::Token,
+    pub statements: Vec<Box<dyn Statement>>,
+}
+
+impl Node for BlockStatement {
+    fn token_literal(&self) -> String {
+        return self.token.literal.clone();
+    }
+}
+
+impl Statement for BlockStatement {}
+
+#[derive(Debug)]
 pub struct ExpressionStatement {
     pub token: token::Token,
     pub value: Box<dyn Expression>,
@@ -99,6 +113,21 @@ impl Node for IntegerLiteral {
 
 impl Expression for IntegerLiteral {}
 
+//Expression Nodes
+#[derive(Debug)]
+pub struct Boolean {
+    pub token: token::Token,
+    pub value: bool,
+}
+
+impl Node for Boolean {
+    fn token_literal(&self) -> String {
+        return self.token.literal.clone();
+    }
+}
+
+impl Expression for Boolean {}
+
 #[derive(Debug)]
 pub struct PrefixExpression {
     pub token: token::Token,
@@ -113,6 +142,22 @@ impl Node for PrefixExpression {
 }
 
 impl Expression for PrefixExpression {}
+
+#[derive(Debug)]
+pub struct IfExpression {
+    pub token: token::Token,
+    pub condition: Box<dyn Expression>,
+    pub consequence: Box<BlockStatement>,
+    pub alternate: Option<Box<BlockStatement>>,
+}
+
+impl Node for IfExpression {
+    fn token_literal(&self) -> String {
+        return self.token.literal.clone();
+    }
+}
+
+impl Expression for IfExpression {}
 
 //Expression Nodes
 #[derive(Debug)]

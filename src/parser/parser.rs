@@ -2,8 +2,8 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use super::ast;
-use super::ast::Expression;
+use super::ast::{self, BlockStatement};
+use super::ast::{Expression, Statement};
 use super::types::{ParseError, ParseErrorKind, PrecedenceValue, Precedences};
 use crate::lexer::lexer;
 use crate::lexer::token::TokenType;
@@ -199,14 +199,24 @@ impl<'a> Parser<'a> {
             TokenType::IDENTIFIER => self.parse_identifier_expression(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             TokenType::LPAREN => match self.parse_group_expression() {
-                Ok(token) => token,
+                Ok(expr) => expr,
+                Err(e) => {
+                    return Err(e);
+                }
+            },
+            TokenType::TRUE | TokenType::FALSE => self.parse_boolean_expression(),
+            TokenType::IF => match self.parse_if_expression() {
+                Ok(expr) => expr,
                 Err(e) => {
                     return Err(e);
                 }
             },
             _ => {
                 return Err(ParseError {
-                    message: String::from("No Method for parsing token"),
+                    message: String::from(format!(
+                        "No Method for parsing token {:?}",
+                        curr_token.token_type
+                    )),
                     kind: ParseErrorKind::GENERIC,
                 })
             }
@@ -266,8 +276,71 @@ impl<'a> Parser<'a> {
         return Box::new(expression);
     }
 
+    fn parse_if_expression(&mut self) -> Result<Box<ast::IfExpression>, ParseError> {
+        let current_token = self.current_token().unwrap();
+        //Skip if token
+        if self.expect_peek_token().unwrap() != TokenType::LPAREN {
+            return Err(ParseError {
+                message: String::from(format!("Expected to have ( at line {}", current_token.line)),
+                kind: ParseErrorKind::GENERIC,
+            });
+        };
+        self.next_token();
+        let condition = self
+            .parse_expression(self.get_precedence_value("LOWEST"))
+            .unwrap();
+
+        if self.current_token().unwrap().token_type != TokenType::RPAREN {
+            return Err(ParseError {
+                message: String::from(format!("Expected to have ) at line {}", current_token.line)),
+                kind: ParseErrorKind::GENERIC,
+            });
+        };
+
+        let peek_token = self.expect_peek_token().unwrap();
+        if peek_token != TokenType::LBRACE {
+            return Err(ParseError {
+                message: String::from(format!(
+                    "Expected to have L Brace at line {} but found {:?}",
+                    current_token.line, peek_token
+                )),
+                kind: ParseErrorKind::GENERIC,
+            });
+        };
+        self.next_token();
+
+        let consequence = self.parse_block_statement().unwrap();
+
+        //skip } token
+        self.next_token();
+
+        let mut alternate = None;
+        //Parse the else condition as well
+        if self.current_token().unwrap().token_type == TokenType::ELSE {
+            if self.expect_peek_token().unwrap() != TokenType::LBRACE {
+                return Err(ParseError {
+                    message: String::from(format!(
+                        "Expected to have LBrace at line {}",
+                        current_token.line
+                    )),
+                    kind: ParseErrorKind::GENERIC,
+                });
+            }
+            //Skip { token
+            self.next_token();
+            alternate = Some(self.parse_block_statement().unwrap());
+        };
+
+        Ok(Box::new(ast::IfExpression {
+            token: current_token,
+            condition: condition,
+            consequence: consequence,
+            alternate: alternate,
+        }))
+    }
+
     fn parse_identifier_expression(&mut self) -> Box<dyn ast::Expression> {
-        let curr_token = self.curr_token.as_ref().unwrap().clone();
+        let curr_token = self.current_token().unwrap();
         let literal = curr_token.literal.clone();
         Box::new(ast::Identifier {
             token: curr_token,
@@ -275,8 +348,17 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn parse_boolean_expression(&mut self) -> Box<dyn ast::Expression> {
+        let current_token = self.current_token().unwrap();
+        let current_token_type = current_token.token_type;
+        Box::new(ast::Boolean {
+            token: current_token,
+            value: current_token_type == TokenType::TRUE,
+        })
+    }
+
     fn parse_prefix_expression(&mut self) -> Box<dyn ast::Expression> {
-        let curr_token = self.curr_token.as_ref().unwrap().clone();
+        let curr_token = self.current_token().unwrap();
         let operator = curr_token.literal.clone();
 
         self.next_token();
@@ -290,7 +372,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
-        let curr_token = self.curr_token.as_ref().unwrap().clone();
+        let curr_token = self.current_token().unwrap();
         let expr = self
             .parse_expression(self.get_precedence_value("LOWEST"))
             .unwrap();
@@ -302,6 +384,23 @@ impl<'a> Parser<'a> {
         Ok(Box::new(ast::ExpressionStatement {
             token: curr_token,
             value: expr,
+        }))
+    }
+
+    fn parse_block_statement(&mut self) -> Result<Box<BlockStatement>, ParseError> {
+        let current_token = self.current_token().unwrap();
+        let mut stmts: Vec<Box<dyn Statement>> = vec![];
+        loop {
+            let current_token_type = self.current_token().unwrap().token_type;
+            if current_token_type == TokenType::RBRACE || current_token_type == TokenType::EOF {
+                break;
+            }
+            let stmt = self.parse_statement().unwrap();
+            stmts.push(stmt);
+        }
+        Ok(Box::new(BlockStatement {
+            token: current_token,
+            statements: stmts,
         }))
     }
 
