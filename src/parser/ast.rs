@@ -43,6 +43,20 @@ impl Node for LetStatement {
 impl Statement for LetStatement {}
 
 #[derive(Debug)]
+pub struct ReturnStatement {
+    pub token: token::Token,
+    pub value: Box<dyn Expression>,
+}
+
+impl Node for ReturnStatement {
+    fn token_literal(&self) -> String {
+        return self.token.literal.clone();
+    }
+}
+
+impl Statement for ReturnStatement {}
+
+#[derive(Debug)]
 pub struct ExpressionStatement {
     pub token: token::Token,
     pub value: Box<dyn Expression>,

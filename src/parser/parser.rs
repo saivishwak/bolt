@@ -66,12 +66,9 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
         let curr_token = self.curr_token.as_ref().unwrap();
         match curr_token.token_type {
-            token::TokenType::LET => {
-                return self.parse_let_statement();
-            }
-            _ => {
-                return self.parse_expression_statement();
-            }
+            token::TokenType::LET => return self.parse_let_statement(),
+            token::TokenType::RETURN => self.parse_return_statement(),
+            _ => return self.parse_expression_statement(),
         }
     }
 
@@ -84,6 +81,42 @@ impl<'a> Parser<'a> {
             }),
         };
         token
+    }
+
+    fn peek_token(&self) -> Option<TokenType> {
+        let peek_token = match self.peek_token.as_ref() {
+            Some(token) => Some(token.token_type),
+            None => None,
+        };
+        peek_token
+    }
+
+    fn current_precedence(&self) -> PrecedenceValue {
+        let curr_token = self.curr_token.as_ref().unwrap().clone();
+        let p: PrecedenceValue;
+        match self.precedences.get(&curr_token.token_type) {
+            Some(precedence) => {
+                p = *precedence;
+            }
+            None => {
+                p = self.get_precedence_value("LOWEST");
+            }
+        }
+        return p;
+    }
+
+    fn peek_precedence(&self) -> PrecedenceValue {
+        let peek_token = self.peek_token.as_ref().unwrap().clone();
+        let p: PrecedenceValue;
+        match self.precedences.get(&peek_token.token_type) {
+            Some(precedence) => {
+                p = *precedence;
+            }
+            None => {
+                p = self.get_precedence_value("LOWEST");
+            }
+        }
+        return p;
     }
 
     fn expect_peek_token(&mut self) -> Option<TokenType> {
@@ -99,6 +132,24 @@ impl<'a> Parser<'a> {
             self.next_token();
         }
         peek_token
+    }
+
+    fn parse_return_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
+        let current_token = self.current_token().unwrap();
+        //Skip return token
+        self.next_token();
+        let expr = self
+            .parse_expression(self.get_precedence_value("LOWEST"))
+            .unwrap();
+
+        if self.peek_token().unwrap() == TokenType::SEMICOLON {
+            self.next_token();
+        }
+
+        Ok(Box::new(ast::ReturnStatement {
+            token: current_token.clone(),
+            value: expr,
+        }))
     }
 
     fn parse_let_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
@@ -236,34 +287,6 @@ impl<'a> Parser<'a> {
             operator: operator,
             right: right.unwrap(),
         })
-    }
-
-    fn current_precedence(&self) -> PrecedenceValue {
-        let curr_token = self.curr_token.as_ref().unwrap().clone();
-        let p: PrecedenceValue;
-        match self.precedences.get(&curr_token.token_type) {
-            Some(precedence) => {
-                p = *precedence;
-            }
-            None => {
-                p = self.get_precedence_value("LOWEST");
-            }
-        }
-        return p;
-    }
-
-    fn peek_precedence(&self) -> PrecedenceValue {
-        let peek_token = self.peek_token.as_ref().unwrap().clone();
-        let p: PrecedenceValue;
-        match self.precedences.get(&peek_token.token_type) {
-            Some(precedence) => {
-                p = *precedence;
-            }
-            None => {
-                p = self.get_precedence_value("LOWEST");
-            }
-        }
-        return p;
     }
 
     fn parse_expression_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
