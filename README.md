@@ -1,7 +1,7 @@
 # Bolt Scripting Language
 
 ## Todo
--   [ ] Parse While, Fncs
+-   [x] Parse While, Fncs
 -   [ ] Add Test Cases
 -   [ ] Proper Error Parsing
 -   [ ] Refactor code using better standards
