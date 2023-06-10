@@ -176,6 +176,38 @@ impl Node for BinaryExpression {
 
 impl Expression for BinaryExpression {}
 
+//Expression Nodes
+#[derive(Debug)]
+pub struct FunctionLiteral {
+    pub token: token::Token,
+    pub parameters: Vec<Identifier>,
+    pub body: Box<BlockStatement>,
+}
+
+impl Node for FunctionLiteral {
+    fn token_literal(&self) -> String {
+        return self.token.literal.clone();
+    }
+}
+
+impl Expression for FunctionLiteral {}
+
+//Expression Nodes
+#[derive(Debug)]
+pub struct CallExpression {
+    pub token: token::Token,
+    pub funtion: Rc<Box<dyn Expression>>, //Identifier or FunctionLiteral
+    pub parameters: Vec<Box<dyn Expression>>,
+}
+
+impl Node for CallExpression {
+    fn token_literal(&self) -> String {
+        return self.token.literal.clone();
+    }
+}
+
+impl Expression for CallExpression {}
+
 #[derive(Debug)]
 pub struct Program {
     pub stmts: Vec<Box<dyn Statement>>,

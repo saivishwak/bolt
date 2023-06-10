@@ -185,6 +185,22 @@ impl<'a> Parser<'a> {
         Ok(Box::new(stmt))
     }
 
+    fn parse_expression_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
+        let curr_token = self.current_token().unwrap();
+        let expr = self
+            .parse_expression(self.get_precedence_value("LOWEST"))
+            .unwrap();
+
+        if self.peek_token.as_ref().unwrap().token_type == token::TokenType::SEMICOLON {
+            self.next_token();
+        }
+
+        Ok(Box::new(ast::ExpressionStatement {
+            token: curr_token,
+            value: expr,
+        }))
+    }
+
     fn parse_expression(
         &mut self,
         precedence: usize,
@@ -211,6 +227,12 @@ impl<'a> Parser<'a> {
                     return Err(e);
                 }
             },
+            TokenType::FUNCTION => match self.parse_function_literal() {
+                Ok(expr) => expr,
+                Err(e) => {
+                    return Err(e);
+                }
+            },
             _ => {
                 return Err(ParseError {
                     message: String::from(format!(
@@ -222,8 +244,9 @@ impl<'a> Parser<'a> {
             }
         };
         loop {
-            if self.expect_peek_token().unwrap() != token::TokenType::SEMICOLON
-                && precedence < self.peek_precedence()
+            let peek_precedence = self.peek_precedence();
+            if self.peek_token().unwrap() != token::TokenType::SEMICOLON
+                && precedence < peek_precedence
             {
                 let peek_token = self.peek_token.as_ref().unwrap().clone();
                 match peek_token.token_type {
@@ -237,6 +260,9 @@ impl<'a> Parser<'a> {
                     | TokenType::LT => {
                         left_expr = self.parse_infix_expression(Rc::new(left_expr));
                     }
+                    TokenType::LPAREN => {
+                        left_expr = self.parse_call_expression(Rc::new(left_expr)).unwrap();
+                    }
                     _ => {
                         break;
                     }
@@ -247,6 +273,53 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left_expr)
+    }
+
+    fn parse_function_literal(&mut self) -> Result<Box<dyn Expression>, ParseError> {
+        let curren_token = self.current_token().unwrap();
+        if self.expect_peek_token().unwrap() != TokenType::LPAREN {
+            return Err(ParseError {
+                message: String::from("Expected ("),
+                kind: ParseErrorKind::GENERIC,
+            });
+        }
+        self.next_token();
+
+        //parse parameters
+        let mut parameters: Vec<ast::Identifier> = vec![];
+        loop {
+            let curr_token = self.current_token().unwrap();
+            if curr_token.token_type == TokenType::RPAREN {
+                break;
+            }
+            // We are not caring if the function params start with , we skip it
+            if curr_token.token_type == TokenType::COMMA {
+                self.next_token();
+                continue;
+            }
+            let ident = ast::Identifier {
+                token: curr_token.clone(),
+                value: curr_token.literal,
+            };
+            parameters.push(ident);
+            self.next_token();
+        }
+
+        if self.expect_peek_token().unwrap() != TokenType::LBRACE {
+            return Err(ParseError {
+                message: String::from("Expected LBRACE"),
+                kind: ParseErrorKind::GENERIC,
+            });
+        }
+        self.next_token();
+
+        let body = self.parse_block_statement().unwrap();
+
+        Ok(Box::new(ast::FunctionLiteral {
+            token: curren_token,
+            parameters: parameters,
+            body: body,
+        }))
     }
 
     fn parse_group_expression(&mut self) -> Result<Box<dyn Expression>, ParseError> {
@@ -274,6 +347,42 @@ impl<'a> Parser<'a> {
             right: right,
         };
         return Box::new(expression);
+    }
+
+    fn parse_call_expression(
+        &mut self,
+        left: Rc<Box<dyn Expression>>,
+    ) -> Result<Box<dyn Expression>, ParseError> {
+        let curr_token = self.current_token().unwrap();
+        self.next_token();
+
+        let mut parameters: Vec<Box<dyn Expression>> = vec![];
+        loop {
+            let curr_token = self.current_token().unwrap();
+            if curr_token.token_type == TokenType::RPAREN {
+                break;
+            }
+            // We are not caring if the function params start with , we skip it
+            if curr_token.token_type == TokenType::COMMA {
+                self.next_token();
+                continue;
+            }
+            if curr_token.token_type == TokenType::LPAREN {
+                self.next_token();
+            }
+            let ident = self
+                .parse_expression(self.get_precedence_value("LOWEST"))
+                .unwrap();
+            self.next_token();
+            parameters.push(ident);
+        }
+
+        let call_expression = ast::CallExpression {
+            token: curr_token,
+            funtion: left.clone(),
+            parameters: parameters,
+        };
+        return Ok(Box::new(call_expression));
     }
 
     fn parse_if_expression(&mut self) -> Result<Box<ast::IfExpression>, ParseError> {
@@ -369,22 +478,6 @@ impl<'a> Parser<'a> {
             operator: operator,
             right: right.unwrap(),
         })
-    }
-
-    fn parse_expression_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
-        let curr_token = self.current_token().unwrap();
-        let expr = self
-            .parse_expression(self.get_precedence_value("LOWEST"))
-            .unwrap();
-
-        if self.peek_token.as_ref().unwrap().token_type == token::TokenType::SEMICOLON {
-            self.next_token();
-        }
-
-        Ok(Box::new(ast::ExpressionStatement {
-            token: curr_token,
-            value: expr,
-        }))
     }
 
     fn parse_block_statement(&mut self) -> Result<Box<BlockStatement>, ParseError> {
