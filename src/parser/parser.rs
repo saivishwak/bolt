@@ -236,7 +236,7 @@ impl<'a> Parser<'a> {
             _ => {
                 return Err(ParseError {
                     message: String::from(format!(
-                        "No Method for parsing token {:?}",
+                        "No Method for parsing prefix token {:?}",
                         curr_token.token_type
                     )),
                     kind: ParseErrorKind::GENERIC,
@@ -502,5 +502,49 @@ impl<'a> Parser<'a> {
         let stmt = self.parse_statement();
         program.stmts.push(stmt.unwrap());
         Ok(program)
+    }
+}
+
+mod parser_test {
+    #![allow(dead_code, unused_imports)]
+    use super::{
+        token::{Token, TokenType},
+        Parser,
+    };
+    use crate::{
+        lexer::lexer,
+        parser::ast::{self, Expression, ExpressionStatement, Statement},
+    };
+    use std::vec;
+    #[test]
+    fn test_integer_literal_xpression() {
+        let input = "10;";
+        let mut parser = Parser::new(&input);
+        let p = parser.parse_program();
+        match p {
+            Ok(res) => {
+                let stmt: &Box<dyn Statement> = &res.stmts[0];
+                let expected_expression = Box::new(ast::IntegerLiteral {
+                    token: Token {
+                        token_type: TokenType::INT,
+                        literal: String::from("10"),
+                        line: 0,
+                    },
+                    value: 10.0,
+                });
+                let actual_stmt = ExpressionStatement {
+                    token: Token {
+                        token_type: TokenType::INT,
+                        literal: String::from("10"),
+                        line: 0,
+                    },
+                    value: expected_expression,
+                };
+                assert_eq!(format!("{:?}", stmt), format!("{:?}", actual_stmt));
+            }
+            Err(e) => {
+                print!("Error - {:?}", e.message);
+            }
+        }
     }
 }

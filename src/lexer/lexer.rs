@@ -5,17 +5,17 @@ use regex::Regex;
 pub struct Lexer<'a> {
     input: &'a str,
     input_chars: Vec<char>,
-    pub position: usize,
-    pub read_position: usize,
+    pub position: usize, // current position in input (points to current char)
+    pub read_position: usize, // current reading position in input (after current char)
     curr_line: usize,
-    ch: char,
+    ch: char, // current char under examination
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(source: &'a str) -> Lexer<'a> {
         let mut lexer = Self {
             input: source,
-            input_chars: source.chars().collect(),
+            input_chars: source.chars().collect(), //Make the source into vector of chars
             position: 0,
             curr_line: 0,
             read_position: 0,
@@ -161,6 +161,7 @@ impl<'a> Lexer<'a> {
             '/' => {
                 // Case for comments which needs to be ignored
                 if self.peek_char() == '/' {
+                    // Loop until you find the new line to exit the comment
                     loop {
                         self.read_char();
                         if self.ch == '\n' {
@@ -243,7 +244,7 @@ impl<'a> Lexer<'a> {
                 // Find if its a letter or digit
                 if self.is_letter(self.ch) {
                     let literal = self.lookup_identifier();
-                    let token = token::lookup_indent(literal);
+                    let token = token::lookup_indentifier(literal);
                     tok = token::Token {
                         token_type: token,
                         literal: String::from(literal),

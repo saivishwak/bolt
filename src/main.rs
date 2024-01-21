@@ -12,7 +12,7 @@ fn main() {
 \_____/\___/|_|\__| \____/\__,_|_| |_|\__, |\__,_|\__,_|\__, |\___|
                                       |___/             |___/      
     
-    Welcome to Bolt! Language build for learnging and educational purpose.
+    Welcome to Bolt! Language built for learning and educational purpose.
     "###
     );
     repl::start_repl().unwrap();

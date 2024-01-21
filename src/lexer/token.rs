@@ -45,7 +45,10 @@ pub enum TokenType {
     RETURN,
 }
 
-pub fn lookup_indent(indent: &str) -> TokenType {
+/*
+When resolving indentifier check if the indentifier is a reserved word
+*/
+pub fn lookup_indentifier(indent: &str) -> TokenType {
     let keywords: HashMap<&str, TokenType> = HashMap::from([
         ("let", TokenType::LET),
         ("fn", TokenType::FUNCTION),
@@ -64,7 +67,6 @@ pub fn lookup_indent(indent: &str) -> TokenType {
             //
         }
     };
-
     return TokenType::IDENTIFIER;
 }
 
