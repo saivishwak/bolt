@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::parser::parser;
+use bolt::parser::parser;
 use std::io;
 
 pub fn start_repl() -> io::Result<()> {
