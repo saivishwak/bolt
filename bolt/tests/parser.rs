@@ -723,3 +723,157 @@ fn test_boolean_expression() {
         }
     }
 }
+
+#[test]
+fn test_grouped_expressions() {
+    let tests = ["1 + (2 + 3)", "(5 + 5) * 2", "-(5 + 5)"];
+    let expected_results = vec![
+        ExpressionStatement {
+            token: Token {
+                token_type: TokenType::INT,
+                literal: String::from("1"),
+                line: 0,
+            },
+            value: Box::new(BinaryExpression {
+                token: Token {
+                    token_type: TokenType::PLUS,
+                    literal: String::from("+"),
+                    line: 0,
+                },
+                operator: String::from("+"),
+                left: Rc::new(Box::new(IntegerLiteral {
+                    token: Token {
+                        token_type: TokenType::INT,
+                        literal: String::from("1"),
+                        line: 0,
+                    },
+                    value: 1.0,
+                })),
+                right: Box::new(BinaryExpression {
+                    token: Token {
+                        token_type: TokenType::PLUS,
+                        literal: String::from("+"),
+                        line: 0,
+                    },
+                    operator: String::from("+"),
+                    left: Rc::new(Box::new(IntegerLiteral {
+                        token: Token {
+                            token_type: TokenType::INT,
+                            literal: String::from("2"),
+                            line: 0,
+                        },
+                        value: 2.0,
+                    })),
+                    right: Box::new(IntegerLiteral {
+                        token: Token {
+                            token_type: TokenType::INT,
+                            literal: String::from("3"),
+                            line: 0,
+                        },
+                        value: 3.0,
+                    }),
+                }),
+            }),
+        },
+        ExpressionStatement {
+            token: Token {
+                token_type: TokenType::LPAREN,
+                literal: String::from("("),
+                line: 0,
+            },
+            value: Box::new(BinaryExpression {
+                token: Token {
+                    token_type: TokenType::ASTERISK,
+                    literal: String::from("*"),
+                    line: 0,
+                },
+                operator: String::from("*"),
+                left: Rc::new(Box::new(BinaryExpression {
+                    token: Token {
+                        token_type: TokenType::PLUS,
+                        literal: String::from("+"),
+                        line: 0,
+                    },
+                    operator: String::from("+"),
+                    left: Rc::new(Box::new(IntegerLiteral {
+                        token: Token {
+                            token_type: TokenType::INT,
+                            literal: String::from("5"),
+                            line: 0,
+                        },
+                        value: 5.0,
+                    })),
+                    right: Box::new(IntegerLiteral {
+                        token: Token {
+                            token_type: TokenType::INT,
+                            literal: String::from("5"),
+                            line: 0,
+                        },
+                        value: 5.0,
+                    }),
+                })),
+                right: Box::new(IntegerLiteral {
+                    token: Token {
+                        token_type: TokenType::INT,
+                        literal: String::from("2"),
+                        line: 0,
+                    },
+                    value: 2.0,
+                }),
+            }),
+        },
+        ExpressionStatement {
+            token: Token {
+                token_type: TokenType::MINUS,
+                literal: String::from("-"),
+                line: 0,
+            },
+            value: Box::new(PrefixExpression {
+                token: Token {
+                    token_type: TokenType::MINUS,
+                    literal: String::from("-"),
+                    line: 0,
+                },
+                operator: String::from("-"),
+                right: Box::new(BinaryExpression {
+                    token: Token {
+                        token_type: TokenType::PLUS,
+                        literal: String::from("+"),
+                        line: 0,
+                    },
+                    operator: String::from("+"),
+                    left: Rc::new(Box::new(IntegerLiteral {
+                        token: Token {
+                            token_type: TokenType::INT,
+                            literal: String::from("5"),
+                            line: 0,
+                        },
+                        value: 5.0,
+                    })),
+                    right: Box::new(IntegerLiteral {
+                        token: Token {
+                            token_type: TokenType::INT,
+                            literal: String::from("5"),
+                            line: 0,
+                        },
+                        value: 5.0,
+                    }),
+                }),
+            }),
+        },
+    ];
+    let size = tests.len();
+    for i in 0..size {
+        let mut parser = Parser::new(tests[i]);
+        let p = parser.parse_program();
+        match p {
+            Ok(res) => {
+                let stmt: &Box<dyn Statement> = &res.stmts[0];
+                assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
+            }
+            Err(e) => {
+                print!("Error - {:?}", e.message);
+            }
+        }
+    }
+}
