@@ -25,6 +25,7 @@ impl<'a> Parser<'a> {
             precedences: HashMap::from([
                 (TokenType::ASSIGN, Precedences::EQUALS as PrecedenceValue),
                 (TokenType::NOTEQ, Precedences::EQUALS as PrecedenceValue),
+                (TokenType::EQ, Precedences::EQUALS as PrecedenceValue),
                 (TokenType::LT, Precedences::LESSGREATER as PrecedenceValue),
                 (TokenType::GT, Precedences::LESSGREATER as PrecedenceValue),
                 (TokenType::PLUS, Precedences::SUM as PrecedenceValue),
@@ -249,6 +250,8 @@ impl<'a> Parser<'a> {
                 && precedence < peek_precedence
             {
                 let peek_token = self.peek_token.as_ref().unwrap().clone();
+                //Move the token to next that is the prefix operator
+                self.next_token();
                 match peek_token.token_type {
                     TokenType::PLUS
                     | TokenType::MINUS
