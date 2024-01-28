@@ -398,9 +398,12 @@ impl<'a> Parser<'a> {
             });
         };
         self.next_token();
+
         let condition = self
             .parse_expression(self.get_precedence_value("LOWEST"))
             .unwrap();
+
+        self.next_token();
 
         if self.current_token().unwrap().token_type != TokenType::RPAREN {
             return Err(ParseError {
@@ -493,6 +496,17 @@ impl<'a> Parser<'a> {
             }
             let stmt = self.parse_statement().unwrap();
             stmts.push(stmt);
+            self.next_token();
+            if self.current_token().unwrap().token_type == TokenType::SEMICOLON {
+                self.next_token();
+            } else {
+                //ToDo - Better Error handling and also is semicolon madatory in bolt?
+                // return Err(ParseError {
+                //     message: String::from("Semicolon missing for statement"),
+                //     kind: ParseErrorKind::GENERIC,
+                // });
+            }
+            println!("{:?}", self.current_token().unwrap());
         }
         Ok(Box::new(BlockStatement {
             token: current_token,

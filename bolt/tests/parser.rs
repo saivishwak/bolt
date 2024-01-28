@@ -9,8 +9,8 @@ use bolt::{
     },
     parser::{
         ast::{
-            self, BinaryExpression, Boolean, Expression, ExpressionStatement, Identifier,
-            IntegerLiteral, LetStatement, PrefixExpression, Statement,
+            self, BinaryExpression, BlockStatement, Boolean, Expression, ExpressionStatement,
+            Identifier, IfExpression, IntegerLiteral, LetStatement, PrefixExpression, Statement,
         },
         parser::Parser,
     },
@@ -859,6 +859,384 @@ fn test_grouped_expressions() {
                         value: 5.0,
                     }),
                 }),
+            }),
+        },
+    ];
+    let size = tests.len();
+    for i in 0..size {
+        let mut parser = Parser::new(tests[i]);
+        let p = parser.parse_program();
+        match p {
+            Ok(res) => {
+                let stmt: &Box<dyn Statement> = &res.stmts[0];
+                assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
+            }
+            Err(e) => {
+                print!("Error - {:?}", e.message);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_if_expression() {
+    let tests = [
+        "if (x > y) { x };",
+        "if (x > y) { x } else { y }",
+        "if (x > y) { let a = 1;\n let b = 2; }",
+        "if (x > y) { x }\nelse { let a = 1;\n let b = 2; }",
+    ];
+    let expected_results = vec![
+        ExpressionStatement {
+            token: Token {
+                token_type: TokenType::IF,
+                literal: String::from("if"),
+                line: 0,
+            },
+            value: Box::new(IfExpression {
+                token: Token {
+                    token_type: TokenType::IF,
+                    literal: String::from("if"),
+                    line: 0,
+                },
+                condition: Box::new(BinaryExpression {
+                    token: Token {
+                        token_type: TokenType::GT,
+                        literal: String::from(">"),
+                        line: 0,
+                    },
+                    operator: String::from(">"),
+                    left: Rc::new(Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: String::from("x"),
+                    })),
+                    right: Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("y"),
+                            line: 0,
+                        },
+                        value: String::from("y"),
+                    }),
+                }),
+                consequence: Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::IDENTIFIER,
+                        literal: String::from("x"),
+                        line: 0,
+                    },
+                    statements: vec![Box::new(ExpressionStatement {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: Box::new(Identifier {
+                            token: Token {
+                                token_type: TokenType::IDENTIFIER,
+                                literal: String::from("x"),
+                                line: 0,
+                            },
+                            value: String::from("x"),
+                        }),
+                    })],
+                }),
+                alternate: None,
+            }),
+        },
+        ExpressionStatement {
+            token: Token {
+                token_type: TokenType::IF,
+                literal: String::from("if"),
+                line: 0,
+            },
+            value: Box::new(IfExpression {
+                token: Token {
+                    token_type: TokenType::IF,
+                    literal: String::from("if"),
+                    line: 0,
+                },
+                condition: Box::new(BinaryExpression {
+                    token: Token {
+                        token_type: TokenType::GT,
+                        literal: String::from(">"),
+                        line: 0,
+                    },
+                    operator: String::from(">"),
+                    left: Rc::new(Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: String::from("x"),
+                    })),
+                    right: Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("y"),
+                            line: 0,
+                        },
+                        value: String::from("y"),
+                    }),
+                }),
+                consequence: Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::IDENTIFIER,
+                        literal: String::from("x"),
+                        line: 0,
+                    },
+                    statements: vec![Box::new(ExpressionStatement {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: Box::new(Identifier {
+                            token: Token {
+                                token_type: TokenType::IDENTIFIER,
+                                literal: String::from("x"),
+                                line: 0,
+                            },
+                            value: String::from("x"),
+                        }),
+                    })],
+                }),
+                alternate: Some(Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::IDENTIFIER,
+                        literal: String::from("y"),
+                        line: 0,
+                    },
+                    statements: vec![Box::new(ExpressionStatement {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("y"),
+                            line: 0,
+                        },
+                        value: Box::new(Identifier {
+                            token: Token {
+                                token_type: TokenType::IDENTIFIER,
+                                literal: String::from("y"),
+                                line: 0,
+                            },
+                            value: String::from("y"),
+                        }),
+                    })],
+                })),
+            }),
+        },
+        ExpressionStatement {
+            token: Token {
+                token_type: TokenType::IF,
+                literal: String::from("if"),
+                line: 0,
+            },
+            value: Box::new(IfExpression {
+                token: Token {
+                    token_type: TokenType::IF,
+                    literal: String::from("if"),
+                    line: 0,
+                },
+                condition: Box::new(BinaryExpression {
+                    token: Token {
+                        token_type: TokenType::GT,
+                        literal: String::from(">"),
+                        line: 0,
+                    },
+                    operator: String::from(">"),
+                    left: Rc::new(Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: String::from("x"),
+                    })),
+                    right: Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("y"),
+                            line: 0,
+                        },
+                        value: String::from("y"),
+                    }),
+                }),
+                consequence: Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::LET,
+                        literal: String::from("let"),
+                        line: 0,
+                    },
+                    statements: vec![
+                        Box::new(LetStatement {
+                            token: Token {
+                                token_type: TokenType::LET,
+                                literal: String::from("let"),
+                                line: 0,
+                            },
+                            identifier: Identifier {
+                                token: Token {
+                                    token_type: TokenType::IDENTIFIER,
+                                    literal: String::from("a"),
+                                    line: 0,
+                                },
+                                value: String::from("a"),
+                            },
+                            value: Box::new(IntegerLiteral {
+                                token: Token {
+                                    token_type: TokenType::INT,
+                                    literal: String::from("1"),
+                                    line: 0,
+                                },
+                                value: 1.0,
+                            }),
+                        }),
+                        Box::new(LetStatement {
+                            token: Token {
+                                token_type: TokenType::LET,
+                                literal: String::from("let"),
+                                line: 1,
+                            },
+                            identifier: Identifier {
+                                token: Token {
+                                    token_type: TokenType::IDENTIFIER,
+                                    literal: String::from("b"),
+                                    line: 1,
+                                },
+                                value: String::from("b"),
+                            },
+                            value: Box::new(IntegerLiteral {
+                                token: Token {
+                                    token_type: TokenType::INT,
+                                    literal: String::from("2"),
+                                    line: 1,
+                                },
+                                value: 2.0,
+                            }),
+                        }),
+                    ],
+                }),
+                alternate: None,
+            }),
+        },
+        ExpressionStatement {
+            token: Token {
+                token_type: TokenType::IF,
+                literal: String::from("if"),
+                line: 0,
+            },
+            value: Box::new(IfExpression {
+                token: Token {
+                    token_type: TokenType::IF,
+                    literal: String::from("if"),
+                    line: 0,
+                },
+                condition: Box::new(BinaryExpression {
+                    token: Token {
+                        token_type: TokenType::GT,
+                        literal: String::from(">"),
+                        line: 0,
+                    },
+                    operator: String::from(">"),
+                    left: Rc::new(Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: String::from("x"),
+                    })),
+                    right: Box::new(Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("y"),
+                            line: 0,
+                        },
+                        value: String::from("y"),
+                    }),
+                }),
+                consequence: Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::IDENTIFIER,
+                        literal: String::from("x"),
+                        line: 0,
+                    },
+                    statements: vec![Box::new(ExpressionStatement {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: Box::new(Identifier {
+                            token: Token {
+                                token_type: TokenType::IDENTIFIER,
+                                literal: String::from("x"),
+                                line: 0,
+                            },
+                            value: String::from("x"),
+                        }),
+                    })],
+                }),
+                alternate: Some(Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::LET,
+                        literal: String::from("let"),
+                        line: 1,
+                    },
+                    statements: vec![
+                        Box::new(LetStatement {
+                            token: Token {
+                                token_type: TokenType::LET,
+                                literal: String::from("let"),
+                                line: 1,
+                            },
+                            identifier: Identifier {
+                                token: Token {
+                                    token_type: TokenType::IDENTIFIER,
+                                    literal: String::from("a"),
+                                    line: 1,
+                                },
+                                value: String::from("a"),
+                            },
+                            value: Box::new(IntegerLiteral {
+                                token: Token {
+                                    token_type: TokenType::INT,
+                                    literal: String::from("1"),
+                                    line: 1,
+                                },
+                                value: 1.0,
+                            }),
+                        }),
+                        Box::new(LetStatement {
+                            token: Token {
+                                token_type: TokenType::LET,
+                                literal: String::from("let"),
+                                line: 2,
+                            },
+                            identifier: Identifier {
+                                token: Token {
+                                    token_type: TokenType::IDENTIFIER,
+                                    literal: String::from("b"),
+                                    line: 2,
+                                },
+                                value: String::from("b"),
+                            },
+                            value: Box::new(IntegerLiteral {
+                                token: Token {
+                                    token_type: TokenType::INT,
+                                    literal: String::from("2"),
+                                    line: 2,
+                                },
+                                value: 2.0,
+                            }),
+                        }),
+                    ],
+                })),
             }),
         },
     ];
