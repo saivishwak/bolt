@@ -1,6 +1,6 @@
 #![allow(dead_code, unused_imports)]
 
-use std::rc::Rc;
+use std::{rc::Rc, vec};
 
 use bolt::{
     lexer::{
@@ -10,7 +10,8 @@ use bolt::{
     parser::{
         ast::{
             self, BinaryExpression, BlockStatement, Boolean, Expression, ExpressionStatement,
-            Identifier, IfExpression, IntegerLiteral, LetStatement, PrefixExpression, Statement,
+            FunctionLiteral, Identifier, IfExpression, IntegerLiteral, LetStatement,
+            PrefixExpression, ReturnStatement, Statement,
         },
         parser::Parser,
     },
@@ -1252,6 +1253,217 @@ fn test_if_expression() {
             Err(e) => {
                 print!("Error - {:?}", e.message);
             }
+        }
+    }
+}
+
+#[test]
+fn test_function_parameter_parsing() {
+    let tests = ["fn(){}", "fn(x, y){return x + y;}"];
+    let expected_results = vec![
+        Box::new(ExpressionStatement {
+            token: Token {
+                token_type: TokenType::FUNCTION,
+                literal: String::from("fn"),
+                line: 0,
+            },
+            value: Box::new(FunctionLiteral {
+                token: Token {
+                    token_type: TokenType::FUNCTION,
+                    literal: String::from("fn"),
+                    line: 0,
+                },
+                parameters: vec![],
+                body: Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::RBRACE,
+                        literal: String::from("}"),
+                        line: 0,
+                    },
+                    statements: vec![],
+                }),
+            }),
+        }),
+        Box::new(ExpressionStatement {
+            token: Token {
+                token_type: TokenType::FUNCTION,
+                literal: String::from("fn"),
+                line: 0,
+            },
+            value: Box::new(FunctionLiteral {
+                token: Token {
+                    token_type: TokenType::FUNCTION,
+                    literal: String::from("fn"),
+                    line: 0,
+                },
+                parameters: vec![
+                    Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("x"),
+                            line: 0,
+                        },
+                        value: String::from("x"),
+                    },
+                    Identifier {
+                        token: Token {
+                            token_type: TokenType::IDENTIFIER,
+                            literal: String::from("y"),
+                            line: 0,
+                        },
+                        value: String::from("y"),
+                    },
+                ],
+                body: Box::new(BlockStatement {
+                    token: Token {
+                        token_type: TokenType::RETURN,
+                        literal: String::from("return"),
+                        line: 0,
+                    },
+                    statements: vec![Box::new(ReturnStatement {
+                        token: Token {
+                            token_type: TokenType::RETURN,
+                            literal: String::from("return"),
+                            line: 0,
+                        },
+                        value: Box::new(BinaryExpression {
+                            token: Token {
+                                token_type: TokenType::PLUS,
+                                literal: String::from("+"),
+                                line: 0,
+                            },
+                            operator: String::from("+"),
+                            left: Rc::new(Box::new(Identifier {
+                                token: Token {
+                                    token_type: TokenType::IDENTIFIER,
+                                    literal: String::from("x"),
+                                    line: 0,
+                                },
+                                value: String::from("x"),
+                            })),
+                            right: Box::new(Identifier {
+                                token: Token {
+                                    token_type: TokenType::IDENTIFIER,
+                                    literal: String::from("y"),
+                                    line: 0,
+                                },
+                                value: String::from("y"),
+                            }),
+                        }),
+                    })],
+                }),
+            }),
+        }),
+    ];
+    let size = tests.len();
+    for i in 0..size {
+        let mut parser = Parser::new(tests[i]);
+        let p = parser.parse_program();
+        match p {
+            Ok(res) => {
+                let stmt: &Box<dyn Statement> = &res.stmts[0];
+                assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
+            }
+            Err(e) => {
+                print!("Error - {:?}", e.message);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_call_expression_parsing() {
+    let input = "add(1, 2 * 3, 4 + 5);";
+    let mut parser = Parser::new(&input);
+    let p = parser.parse_program();
+    match p {
+        Ok(res) => {
+            let stmt: &Box<dyn Statement> = &res.stmts[0];
+            let expected_expression = Box::new(ast::CallExpression {
+                token: Token {
+                    token_type: TokenType::LPAREN,
+                    literal: String::from("("),
+                    line: 0,
+                },
+                funtion: Rc::new(Box::new(Identifier {
+                    token: Token {
+                        token_type: TokenType::IDENTIFIER,
+                        literal: String::from("add"),
+                        line: 0,
+                    },
+                    value: String::from("add"),
+                })),
+                parameters: vec![
+                    Box::new(IntegerLiteral {
+                        token: Token {
+                            token_type: TokenType::INT,
+                            literal: String::from("1"),
+                            line: 0,
+                        },
+                        value: 1.0,
+                    }),
+                    Box::new(BinaryExpression {
+                        token: Token {
+                            token_type: TokenType::ASTERISK,
+                            literal: String::from("*"),
+                            line: 0,
+                        },
+                        operator: String::from("*"),
+                        left: Rc::new(Box::new(IntegerLiteral {
+                            token: Token {
+                                token_type: TokenType::INT,
+                                literal: String::from("2"),
+                                line: 0,
+                            },
+                            value: 2.0,
+                        })),
+                        right: Box::new(IntegerLiteral {
+                            token: Token {
+                                token_type: TokenType::INT,
+                                literal: String::from("3"),
+                                line: 0,
+                            },
+                            value: 3.0,
+                        }),
+                    }),
+                    Box::new(BinaryExpression {
+                        token: Token {
+                            token_type: TokenType::PLUS,
+                            literal: String::from("+"),
+                            line: 0,
+                        },
+                        operator: String::from("+"),
+                        left: Rc::new(Box::new(IntegerLiteral {
+                            token: Token {
+                                token_type: TokenType::INT,
+                                literal: String::from("4"),
+                                line: 0,
+                            },
+                            value: 4.0,
+                        })),
+                        right: Box::new(IntegerLiteral {
+                            token: Token {
+                                token_type: TokenType::INT,
+                                literal: String::from("5"),
+                                line: 0,
+                            },
+                            value: 5.0,
+                        }),
+                    }),
+                ],
+            });
+            let actual_stmt = ExpressionStatement {
+                token: Token {
+                    token_type: TokenType::IDENTIFIER,
+                    literal: String::from("add"),
+                    line: 0,
+                },
+                value: expected_expression,
+            };
+            assert_eq!(format!("{:?}", stmt), format!("{:?}", actual_stmt));
+        }
+        Err(e) => {
+            print!("Error - {:?}", e.message);
         }
     }
 }

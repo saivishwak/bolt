@@ -506,7 +506,6 @@ impl<'a> Parser<'a> {
                 //     kind: ParseErrorKind::GENERIC,
                 // });
             }
-            println!("{:?}", self.current_token().unwrap());
         }
         Ok(Box::new(BlockStatement {
             token: current_token,

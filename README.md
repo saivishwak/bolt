@@ -100,3 +100,10 @@ Bolt supports Closures as well!
 // Comments in Bolt
 let a = 10;
 ```
+
+Function calls
+```
+add(2, 3);
+
+fn(x, y) { x + y; }(2, 3);
+```
