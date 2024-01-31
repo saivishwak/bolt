@@ -38,6 +38,7 @@ pub enum TokenType {
     //Keyworks
     LET,
     FUNCTION,
+    NULL,
     TRUE,
     FALSE,
     IF,
@@ -51,6 +52,7 @@ When resolving indentifier check if the indentifier is a reserved word
 pub fn lookup_indentifier(indent: &str) -> TokenType {
     let keywords: HashMap<&str, TokenType> = HashMap::from([
         ("let", TokenType::LET),
+        ("null", TokenType::NULL),
         ("fn", TokenType::FUNCTION),
         ("if", TokenType::IF),
         ("else", TokenType::ELSE),

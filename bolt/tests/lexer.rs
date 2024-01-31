@@ -416,7 +416,6 @@ fn next_token() {
         if token.token_type == TokenType::EOF {
             break;
         }
-        println!("{:#?}", token);
         tokens.push(token);
     }
     assert_eq!(tokens, test_tokens);

@@ -213,6 +213,7 @@ impl<'a> Parser<'a> {
                 token: curr_token.clone(),
                 value: curr_token.literal.parse::<f32>().unwrap(),
             }),
+            TokenType::NULL => Box::new(ast::NullLiteral {}),
             TokenType::IDENTIFIER => self.parse_identifier_expression(),
             TokenType::BANG | TokenType::MINUS => self.parse_prefix_expression(),
             TokenType::LPAREN => match self.parse_group_expression() {

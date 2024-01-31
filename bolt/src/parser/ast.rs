@@ -1,10 +1,11 @@
 #![allow(dead_code)]
 use crate::lexer::token;
 use core::fmt::Debug;
-use std::rc::Rc;
+use std::{any::Any, rc::Rc};
 
 pub trait Node {
     fn token_literal(&self) -> String;
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub trait Statement: Node
@@ -38,6 +39,9 @@ impl Node for LetStatement {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Statement for LetStatement {}
@@ -51,6 +55,9 @@ pub struct ReturnStatement {
 impl Node for ReturnStatement {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -66,6 +73,9 @@ impl Node for BlockStatement {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Statement for BlockStatement {}
@@ -80,6 +90,9 @@ impl Node for ExpressionStatement {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Statement for ExpressionStatement {}
@@ -93,6 +106,9 @@ pub struct Identifier {
 impl Node for Identifier {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -109,9 +125,27 @@ impl Node for IntegerLiteral {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Expression for IntegerLiteral {}
+
+//Expression Nodes
+#[derive(Debug)]
+pub struct NullLiteral {}
+
+impl Node for NullLiteral {
+    fn token_literal(&self) -> String {
+        return String::from("null");
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Expression for NullLiteral {}
 
 //Expression Nodes
 #[derive(Debug)]
@@ -123,6 +157,9 @@ pub struct Boolean {
 impl Node for Boolean {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -139,6 +176,10 @@ impl Node for PrefixExpression {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Expression for PrefixExpression {}
@@ -154,6 +195,9 @@ pub struct IfExpression {
 impl Node for IfExpression {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -172,6 +216,9 @@ impl Node for BinaryExpression {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Expression for BinaryExpression {}
@@ -188,6 +235,9 @@ impl Node for FunctionLiteral {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl Expression for FunctionLiteral {}
@@ -203,6 +253,9 @@ pub struct CallExpression {
 impl Node for CallExpression {
     fn token_literal(&self) -> String {
         return self.token.literal.clone();
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
