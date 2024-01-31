@@ -1,14 +1,14 @@
 use crate::{
     object::object::{Interger, Object},
     parser::ast::{
-        Boolean, Expression, ExpressionStatement, IntegerLiteral, NullLiteral, PrefixExpression,
-        Statement,
+        BinaryExpression, Boolean, Expression, ExpressionStatement, IntegerLiteral, NullLiteral,
+        PrefixExpression, Statement,
     },
 };
 
 use super::{
     constants::{FALSE, NULL, TRUE},
-    utils::evaluate_prefix_expression,
+    utils::{evaluate_binary_expression, evaluate_prefix_expression},
 };
 
 pub fn evaluate_expression(expression: &Box<dyn Expression>) -> Result<Box<dyn Object>, ()> {
@@ -24,6 +24,10 @@ pub fn evaluate_expression(expression: &Box<dyn Expression>) -> Result<Box<dyn O
     } else if let Some(prefix) = value_any.downcast_ref::<PrefixExpression>() {
         let right = evaluate_expression(&prefix.right);
         return evaluate_prefix_expression(prefix.operator.clone(), right.unwrap());
+    } else if let Some(binary) = value_any.downcast_ref::<BinaryExpression>() {
+        let left = evaluate_expression(&binary.left);
+        let right = evaluate_expression(&binary.right);
+        return evaluate_binary_expression(binary.operator.clone(), left.unwrap(), right.unwrap());
     } else if let Some(_null) = value_any.downcast_ref::<NullLiteral>() {
         return Ok(Box::new(NULL));
     } else {

@@ -28,6 +28,8 @@ impl<'a> Parser<'a> {
                 (TokenType::EQ, Precedences::EQUALS as PrecedenceValue),
                 (TokenType::LT, Precedences::LESSGREATER as PrecedenceValue),
                 (TokenType::GT, Precedences::LESSGREATER as PrecedenceValue),
+                (TokenType::GTEQ, Precedences::LESSGREATER as PrecedenceValue),
+                (TokenType::LTEQ, Precedences::LESSGREATER as PrecedenceValue),
                 (TokenType::PLUS, Precedences::SUM as PrecedenceValue),
                 (TokenType::MINUS, Precedences::SUM as PrecedenceValue),
                 (TokenType::SLASH, Precedences::PRODUCT as PrecedenceValue),
@@ -259,6 +261,8 @@ impl<'a> Parser<'a> {
                     | TokenType::SLASH
                     | TokenType::ASTERISK
                     | TokenType::EQ
+                    | TokenType::LTEQ
+                    | TokenType::GTEQ
                     | TokenType::NOTEQ
                     | TokenType::GT
                     | TokenType::LT => {
