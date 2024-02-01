@@ -4,4 +4,5 @@ pub enum ObjectType {
     BOOLEAN,
     NULL,
     STRING,
+    RETURN,
 }

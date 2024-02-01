@@ -13,7 +13,7 @@ where
 
 #[derive(Debug)]
 pub struct Interger {
-    pub v: f32,
+    pub value: f32,
 }
 
 impl Object for Interger {
@@ -21,7 +21,7 @@ impl Object for Interger {
         ObjectType::INTERGER
     }
     fn inspect(&self) -> String {
-        self.v.to_string()
+        self.value.to_string()
     }
     fn as_any(&self) -> &dyn Any {
         self
@@ -30,7 +30,7 @@ impl Object for Interger {
 
 #[derive(Debug)]
 pub struct BooleanObj {
-    pub v: bool,
+    pub value: bool,
 }
 
 impl Object for BooleanObj {
@@ -38,7 +38,24 @@ impl Object for BooleanObj {
         ObjectType::BOOLEAN
     }
     fn inspect(&self) -> String {
-        self.v.to_string()
+        self.value.to_string()
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub struct Return {
+    pub value: bool,
+}
+
+impl Object for Return {
+    fn get_type(&self) -> ObjectType {
+        ObjectType::RETURN
+    }
+    fn inspect(&self) -> String {
+        self.value.to_string()
     }
     fn as_any(&self) -> &dyn Any {
         self

@@ -1,9 +1,15 @@
-use crate::object::{
-    object::{BooleanObj, Interger, Null, Object},
-    types::ObjectType,
+use crate::{
+    object::{
+        object::{BooleanObj, Interger, Null, Object},
+        types::ObjectType,
+    },
+    parser::ast::{BlockStatement, IfExpression},
 };
 
-use super::constants::{FALSE, TRUE};
+use super::{
+    constants::{FALSE, NULL, TRUE},
+    evaluator::{evaluate_expression, evaluate_statement},
+};
 
 pub fn evaluate_prefix_expression(
     operator: String,
@@ -26,8 +32,8 @@ pub fn evaluate_prefix_expression(
         "-" => {
             let value_any = right.as_any();
             if let Some(int) = value_any.downcast_ref::<Interger>() {
-                let new_float = -1.0 * int.v;
-                return Ok(Box::new(Interger { v: new_float }));
+                let new_float = -1.0 * int.value;
+                return Ok(Box::new(Interger { value: new_float }));
             }
             return Err(());
         }
@@ -59,44 +65,44 @@ pub fn evaluate_binary_expression(
         }
         match operator.as_str() {
             "+" => {
-                let new_value = left_value.v + right_val.v;
-                return Ok(Box::new(Interger { v: new_value }));
+                let new_value = left_value.value + right_val.value;
+                return Ok(Box::new(Interger { value: new_value }));
             }
             "-" => {
-                let new_value = left_value.v - right_val.v;
-                return Ok(Box::new(Interger { v: new_value }));
+                let new_value = left_value.value - right_val.value;
+                return Ok(Box::new(Interger { value: new_value }));
             }
             "*" => {
-                let new_value = left_value.v * right_val.v;
-                return Ok(Box::new(Interger { v: new_value }));
+                let new_value = left_value.value * right_val.value;
+                return Ok(Box::new(Interger { value: new_value }));
             }
             "/" => {
-                let new_value = left_value.v / right_val.v;
-                return Ok(Box::new(Interger { v: new_value }));
+                let new_value = left_value.value / right_val.value;
+                return Ok(Box::new(Interger { value: new_value }));
             }
             "<" => {
-                let new_value = left_value.v < right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value < right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             ">" => {
-                let new_value = left_value.v > right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value > right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             "==" => {
-                let new_value = left_value.v == right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value == right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             "!=" => {
-                let new_value = left_value.v != right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value != right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             ">=" => {
-                let new_value = left_value.v >= right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value >= right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             "<=" => {
-                let new_value = left_value.v <= right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value <= right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             _ => return Err(()),
         }
@@ -115,28 +121,28 @@ pub fn evaluate_binary_expression(
         }
         match operator.as_str() {
             "<" => {
-                let new_value = left_value.v < right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value < right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             ">" => {
-                let new_value = left_value.v > right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value > right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             "==" => {
-                let new_value = left_value.v == right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value == right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             "!=" => {
-                let new_value = left_value.v != right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value != right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             ">=" => {
-                let new_value = left_value.v >= right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value >= right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             "<=" => {
-                let new_value = left_value.v <= right_val.v;
-                return Ok(Box::new(BooleanObj { v: new_value }));
+                let new_value = left_value.value <= right_val.value;
+                return Ok(Box::new(BooleanObj { value: new_value }));
             }
             _ => return Err(()),
         }
@@ -149,9 +155,57 @@ pub fn evaluate_binary_expression(
 pub fn is_truthy(condition: Box<dyn Object>) -> bool {
     let value_any = condition.as_any();
     if let Some(value) = value_any.downcast_ref::<BooleanObj>() {
-        return value.v;
+        return value.value;
     } else if let Some(_value) = value_any.downcast_ref::<Null>() {
         return false;
     }
     return false;
+}
+
+pub fn evaluate_block_statement(
+    block_statement: &Box<BlockStatement>,
+) -> Result<Box<dyn Object>, ()> {
+    let statements = &block_statement.statements;
+    let mut result: Option<Result<Box<dyn Object>, ()>> = None;
+    for statement in statements {
+        result = Some(evaluate_statement(statement));
+    }
+    if let Some(res) = result {
+        return res;
+    } else {
+        return Err(());
+    }
+}
+
+pub fn evaluate_block_statement_ref(
+    block_statement: &BlockStatement,
+) -> Result<Box<dyn Object>, ()> {
+    let statements = &block_statement.statements;
+    let mut result: Option<Result<Box<dyn Object>, ()>> = None;
+    for statement in statements {
+        result = Some(evaluate_statement(statement));
+    }
+    if let Some(res) = result {
+        return res;
+    } else {
+        return Err(());
+    }
+}
+
+pub fn evaluate_condition_expression(if_expression: &IfExpression) -> Result<Box<dyn Object>, ()> {
+    let condition_eval = evaluate_expression(&if_expression.condition).unwrap();
+    let truthy = is_truthy(condition_eval);
+    if truthy {
+        let consequence = &if_expression.consequence;
+        return evaluate_block_statement(consequence);
+    } else {
+        match &if_expression.alternate.as_ref() {
+            Some(alternate) => {
+                return evaluate_block_statement(alternate);
+            }
+            None => {
+                return Ok(Box::new(NULL));
+            }
+        }
+    }
 }

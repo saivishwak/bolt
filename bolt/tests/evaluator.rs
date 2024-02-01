@@ -12,7 +12,7 @@ use bolt::{
 
 #[test]
 fn test_eval() {
-    let a = Interger { v: 10.0 };
+    let a = Interger { value: 10.0 };
     let input = "10;";
     let mut parser = Parser::new(&input);
     let p = parser.parse_program();
@@ -169,7 +169,7 @@ fn test_minus_prefix_evaluation() {
                 let e = evaluate_statement(&stmt).unwrap();
                 let value_any = e.as_any();
                 if let Some(int) = value_any.downcast_ref::<Interger>() {
-                    assert_eq!(int.v, -5.0);
+                    assert_eq!(int.value, -5.0);
                 } else {
                     print!("Error Downcasting");
                 }
@@ -213,7 +213,7 @@ fn test_number_binary_evaluation() {
                     let e = evaluate_statement(&stmt).unwrap();
                     let value_any = e.as_any();
                     if let Some(int) = value_any.downcast_ref::<Interger>() {
-                        assert_eq!(int.v, expected_results[i]);
+                        assert_eq!(int.value, expected_results[i]);
                     } else {
                         print!("Error Downcasting");
                     }
@@ -260,7 +260,7 @@ fn test_boolean_binary_evaluation() {
                     let e = evaluate_statement(&stmt).unwrap();
                     let value_any = e.as_any();
                     if let Some(int) = value_any.downcast_ref::<BooleanObj>() {
-                        assert_eq!(int.v, expected_results[i]);
+                        assert_eq!(int.value, expected_results[i]);
                     } else {
                         print!("Error Downcasting");
                     }
