@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::lexer::token;
 use core::fmt::Debug;
 use std::{any::Any, rc::Rc};
@@ -8,20 +7,14 @@ pub trait Node {
     fn as_any(&self) -> &dyn Any;
 }
 
-pub trait Statement: Node
-where
-    Self: Debug,
-{
+pub trait Statement: Node + Debug {
     fn print(&self) -> String {
         let result = format!("{:?}", self);
         result
     }
 }
 
-pub trait Expression: Node
-where
-    Self: Debug,
-{
+pub trait Expression: Node + Debug {
     fn print(&self) -> String {
         let result = format!("{:?}", self);
         result

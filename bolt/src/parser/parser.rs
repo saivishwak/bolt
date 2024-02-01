@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -9,6 +8,9 @@ use crate::lexer::lexer;
 use crate::lexer::token::TokenType;
 use crate::lexer::token::{self, Token};
 
+// use wasm_bindgen::prelude::*;
+
+// #[wasm_bindgen]
 pub struct Parser<'a> {
     pub lexer: lexer::Lexer<'a>,
     curr_token: Option<token::Token>,

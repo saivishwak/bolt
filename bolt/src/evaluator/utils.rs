@@ -1,5 +1,5 @@
 use crate::object::{
-    object::{BooleanObj, Interger, Object},
+    object::{BooleanObj, Interger, Null, Object},
     types::ObjectType,
 };
 
@@ -144,4 +144,14 @@ pub fn evaluate_binary_expression(
         // Cases like 1 + true or 1 > true , true + 1 true > 1 are errored
         return Err(());
     }
+}
+
+pub fn is_truthy(condition: Box<dyn Object>) -> bool {
+    let value_any = condition.as_any();
+    if let Some(value) = value_any.downcast_ref::<BooleanObj>() {
+        return value.v;
+    } else if let Some(_value) = value_any.downcast_ref::<Null>() {
+        return false;
+    }
+    return false;
 }
