@@ -1,9 +1,9 @@
 use crate::{
     object::{
-        object::{BooleanObj, Interger, Null, Object},
+        object::{BooleanObj, Interger, Null, Object, Return},
         types::ObjectType,
     },
-    parser::ast::{BlockStatement, IfExpression},
+    parser::ast::{BlockStatement, IfExpression, ReturnStatement, Statement},
 };
 
 use super::{
@@ -156,19 +156,29 @@ pub fn is_truthy(condition: Box<dyn Object>) -> bool {
     let value_any = condition.as_any();
     if let Some(value) = value_any.downcast_ref::<BooleanObj>() {
         return value.value;
+    } else if let Some(value) = value_any.downcast_ref::<Interger>() {
+        if value.value == 0.0 {
+            return false;
+        }
+        return true;
     } else if let Some(_value) = value_any.downcast_ref::<Null>() {
         return false;
     }
     return false;
 }
 
-pub fn evaluate_block_statement(
-    block_statement: &Box<BlockStatement>,
+pub fn evaluate_block_statements(
+    statements: &Vec<Box<dyn Statement>>,
 ) -> Result<Box<dyn Object>, ()> {
-    let statements = &block_statement.statements;
     let mut result: Option<Result<Box<dyn Object>, ()>> = None;
     for statement in statements {
         result = Some(evaluate_statement(statement));
+        if let Some(res) = &result {
+            let value_any = res.as_ref().unwrap().as_any();
+            if let Some(_v) = value_any.downcast_ref::<Return>() {
+                return result.unwrap();
+            }
+        }
     }
     if let Some(res) = result {
         return res;
@@ -177,19 +187,18 @@ pub fn evaluate_block_statement(
     }
 }
 
+pub fn evaluate_block_statement(
+    block_statement: &Box<BlockStatement>,
+) -> Result<Box<dyn Object>, ()> {
+    let statements = &block_statement.statements;
+    return evaluate_block_statements(statements);
+}
+
 pub fn evaluate_block_statement_ref(
     block_statement: &BlockStatement,
 ) -> Result<Box<dyn Object>, ()> {
     let statements = &block_statement.statements;
-    let mut result: Option<Result<Box<dyn Object>, ()>> = None;
-    for statement in statements {
-        result = Some(evaluate_statement(statement));
-    }
-    if let Some(res) = result {
-        return res;
-    } else {
-        return Err(());
-    }
+    return evaluate_block_statements(statements);
 }
 
 pub fn evaluate_condition_expression(if_expression: &IfExpression) -> Result<Box<dyn Object>, ()> {
@@ -207,5 +216,16 @@ pub fn evaluate_condition_expression(if_expression: &IfExpression) -> Result<Box
                 return Ok(Box::new(NULL));
             }
         }
+    }
+}
+
+pub fn evaluate_return_statement(
+    return_statement: &ReturnStatement,
+) -> Result<Box<dyn Object>, ()> {
+    match evaluate_expression(&return_statement.value) {
+        Ok(value) => {
+            return Ok(Box::new(Return { value: value }));
+        }
+        Err(e) => return Err(e),
     }
 }

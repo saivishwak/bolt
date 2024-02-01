@@ -433,9 +433,6 @@ impl<'a> Parser<'a> {
 
         let consequence = self.parse_block_statement().unwrap();
 
-        //skip } token
-        self.next_token();
-
         let mut alternate = None;
         //Parse the else condition as well
         if self.current_token().unwrap().token_type == TokenType::ELSE {
@@ -499,6 +496,7 @@ impl<'a> Parser<'a> {
         loop {
             let current_token_type = self.current_token().unwrap().token_type;
             if current_token_type == TokenType::RBRACE || current_token_type == TokenType::EOF {
+                self.next_token();
                 break;
             }
             let stmt = self.parse_statement().unwrap();
@@ -507,7 +505,7 @@ impl<'a> Parser<'a> {
             if self.current_token().unwrap().token_type == TokenType::SEMICOLON {
                 self.next_token();
             } else {
-                //ToDo - Better Error handling and also is semicolon madatory in bolt?
+                // // ToDo - Better Error handling and also is semicolon madatory in bolt?
                 // return Err(ParseError {
                 //     message: String::from("Semicolon missing for statement"),
                 //     kind: ParseErrorKind::GENERIC,

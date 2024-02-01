@@ -3,11 +3,8 @@ use std::any::Any;
 
 use bolt::{
     evaluator::evaluator::evaluate_statement,
-    object::object::{BooleanObj, Interger, Null, Object},
-    parser::{
-        ast::{IntegerLiteral, Statement},
-        parser::Parser,
-    },
+    object::object::{BooleanObj, Interger, Null, Object, Return},
+    parser::{ast::Statement, parser::Parser},
 };
 
 #[test]
@@ -25,7 +22,7 @@ fn test_eval() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 }
@@ -45,7 +42,7 @@ fn test_integer() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 }
@@ -65,7 +62,7 @@ fn test_boolean() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 
@@ -81,7 +78,7 @@ fn test_boolean() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 }
@@ -101,7 +98,7 @@ fn test_null() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 }
@@ -120,7 +117,7 @@ fn test_bool_prefix_evaluation() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 
@@ -136,7 +133,7 @@ fn test_bool_prefix_evaluation() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 
@@ -152,7 +149,7 @@ fn test_bool_prefix_evaluation() {
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 }
@@ -171,12 +168,12 @@ fn test_minus_prefix_evaluation() {
                 if let Some(int) = value_any.downcast_ref::<Interger>() {
                     assert_eq!(int.value, -5.0);
                 } else {
-                    print!("Error Downcasting");
+                    panic!("Error Downcasting");
                 }
             }
         }
         Err(e) => {
-            print!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.message);
         }
     }
 }
@@ -215,12 +212,12 @@ fn test_number_binary_evaluation() {
                     if let Some(int) = value_any.downcast_ref::<Interger>() {
                         assert_eq!(int.value, expected_results[i]);
                     } else {
-                        print!("Error Downcasting");
+                        panic!("Error Downcasting");
                     }
                 }
             }
             Err(e) => {
-                print!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.message);
             }
         }
     }
@@ -262,12 +259,12 @@ fn test_boolean_binary_evaluation() {
                     if let Some(int) = value_any.downcast_ref::<BooleanObj>() {
                         assert_eq!(int.value, expected_results[i]);
                     } else {
-                        print!("Error Downcasting");
+                        panic!("Error Downcasting");
                     }
                 }
             }
             Err(e) => {
-                print!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.message);
             }
         }
     }
@@ -294,15 +291,15 @@ fn test_conditional_evaluation() {
                 for stmt in stmts {
                     let e = evaluate_statement(&stmt).unwrap();
                     let value_any = e.as_any();
-                    if let Some(int) = value_any.downcast_ref::<IntegerLiteral>() {
+                    if let Some(int) = value_any.downcast_ref::<Interger>() {
                         assert_eq!(int.value, expected_results[i]);
                     } else {
-                        print!("Error Downcasting");
+                        panic!("Error Downcasting {:?}", e);
                     }
                 }
             }
             Err(e) => {
-                print!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.message);
             }
         }
     }
@@ -328,7 +325,45 @@ fn test_conditional_evaluation_nil() {
                     if let Some(val) = value_any.downcast_ref::<Null>() {
                         assert_eq!(val.inspect(), String::from("null"));
                     } else {
-                        print!("Error Downcasting");
+                        panic!("Error Downcasting");
+                    }
+                }
+            }
+            Err(e) => {
+                panic!("Error - {:?}", e.message);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_return_evaluation() {
+    let tests = [
+        "if (true) { return 10 }",
+        "if (true) { if (1) {return 10}; return 100 }",
+        "if (false) {return 1}else {return 10}",
+        "if (true) { if (true) { if (false) {return 1} else {return 10}; return 20}; return 30}",
+    ];
+    let expected_results = vec![10.0, 10.0, 10.0, 10.0];
+    let size = tests.len();
+    for i in 0..size {
+        let mut parser = Parser::new(tests[i]);
+        let p = parser.parse_program();
+        match p {
+            Ok(program) => {
+                let stmts = program.stmts;
+                for stmt in stmts {
+                    let e = evaluate_statement(&stmt).unwrap();
+                    let value_any = e.as_any();
+                    if let Some(val) = value_any.downcast_ref::<Return>() {
+                        let value_any = val.value.as_any();
+                        if let Some(val) = value_any.downcast_ref::<Interger>() {
+                            assert_eq!(val.value, expected_results[i]);
+                        } else {
+                            panic!("Error Integer Downcasting");
+                        }
+                    } else {
+                        panic!("Error Downcasting");
                     }
                 }
             }

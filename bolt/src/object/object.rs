@@ -47,7 +47,7 @@ impl Object for BooleanObj {
 
 #[derive(Debug)]
 pub struct Return {
-    pub value: bool,
+    pub value: Box<dyn Object>,
 }
 
 impl Object for Return {
@@ -55,7 +55,7 @@ impl Object for Return {
         ObjectType::RETURN
     }
     fn inspect(&self) -> String {
-        self.value.to_string()
+        return self.value.inspect();
     }
     fn as_any(&self) -> &dyn Any {
         self

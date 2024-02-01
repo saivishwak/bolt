@@ -2,7 +2,7 @@ use crate::{
     object::object::{Interger, Object},
     parser::ast::{
         BinaryExpression, BlockStatement, Boolean, Expression, ExpressionStatement, IfExpression,
-        IntegerLiteral, NullLiteral, PrefixExpression, Statement,
+        IntegerLiteral, NullLiteral, PrefixExpression, ReturnStatement, Statement,
     },
 };
 
@@ -10,7 +10,7 @@ use super::{
     constants::{FALSE, NULL, TRUE},
     utils::{
         evaluate_binary_expression, evaluate_block_statement_ref, evaluate_condition_expression,
-        evaluate_prefix_expression,
+        evaluate_prefix_expression, evaluate_return_statement,
     },
 };
 
@@ -29,7 +29,7 @@ pub fn evaluate_expression(expression: &Box<dyn Expression>) -> Result<Box<dyn O
         return evaluate_prefix_expression(prefix.operator.clone(), right.unwrap());
     } else if let Some(binary) = value_any.downcast_ref::<BinaryExpression>() {
         let left = evaluate_expression(&binary.left);
-        let right = evaluate_expression(&binary.right);
+        let right: Result<Box<dyn Object>, ()> = evaluate_expression(&binary.right);
         return evaluate_binary_expression(binary.operator.clone(), left.unwrap(), right.unwrap());
     } else if let Some(if_expression) = value_any.downcast_ref::<IfExpression>() {
         return evaluate_condition_expression(if_expression);
@@ -46,6 +46,8 @@ pub fn evaluate_statement(statement: &Box<dyn Statement>) -> Result<Box<dyn Obje
         return evaluate_expression(&expr.value);
     } else if let Some(block_statement) = value_any.downcast_ref::<BlockStatement>() {
         return evaluate_block_statement_ref(block_statement);
+    } else if let Some(return_statement) = value_any.downcast_ref::<ReturnStatement>() {
+        return evaluate_return_statement(return_statement);
     } else {
         return Err(());
     }
