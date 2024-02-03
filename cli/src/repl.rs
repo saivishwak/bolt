@@ -1,11 +1,10 @@
-#![allow(dead_code)]
-use bolt::{evaluator::evaluator::evaluate_statement, parser::parser};
+use bolt::evaluator::{environment::Environment, evaluator::eval};
 use std::io::{self, Write};
 
 pub fn start_repl() -> io::Result<()> {
     let mut user_input = String::new();
     let stdin = io::stdin();
-
+    let mut environment = Environment::new();
     loop {
         print!(">> ");
         io::stdout().flush().unwrap();
@@ -17,13 +16,8 @@ pub fn start_repl() -> io::Result<()> {
                 return Err(err);
             }
         };
-        let mut parser = parser::Parser::new(&user_input);
-        if let Ok(p) = parser.parse_program() {
-            for stmt in p.stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                println!("{}", e.inspect());
-            }
-        }
+        let evaluated = eval(user_input.clone(), &mut environment).unwrap();
+        println!("{}", evaluated.inspect());
         user_input.clear();
     }
 }

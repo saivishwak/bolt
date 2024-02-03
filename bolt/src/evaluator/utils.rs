@@ -1,30 +1,35 @@
+use std::rc::Rc;
+
 use crate::{
     object::{
         object::{BooleanObj, Interger, Null, Object, Return},
         types::ObjectType,
     },
-    parser::ast::{BlockStatement, IfExpression, ReturnStatement, Statement},
+    parser::ast::{
+        BlockStatement, Identifier, IfExpression, LetStatement, ReturnStatement, Statement,
+    },
 };
 
 use super::{
     constants::{FALSE, NULL, TRUE},
+    environment::Environment,
     evaluator::{evaluate_expression, evaluate_statement},
 };
 
 pub fn evaluate_prefix_expression(
     operator: String,
-    right: Box<dyn Object>,
-) -> Result<Box<dyn Object>, ()> {
+    right: Rc<Box<dyn Object>>,
+) -> Result<Rc<Box<dyn Object>>, ()> {
     match operator.as_str() {
         "!" => {
             if right.get_type() == ObjectType::BOOLEAN {
                 if right.inspect().as_str() == "true" {
-                    return Ok(Box::new(FALSE));
+                    return Ok(Rc::new(Box::new(FALSE)));
                 } else {
-                    return Ok(Box::new(TRUE));
+                    return Ok(Rc::new(Box::new(TRUE)));
                 }
             } else if right.get_type() == ObjectType::NULL {
-                return Ok(Box::new(TRUE));
+                return Ok(Rc::new(Box::new(TRUE)));
             } else {
                 return Err(());
             }
@@ -33,7 +38,7 @@ pub fn evaluate_prefix_expression(
             let value_any = right.as_any();
             if let Some(int) = value_any.downcast_ref::<Interger>() {
                 let new_float = -1.0 * int.value;
-                return Ok(Box::new(Interger { value: new_float }));
+                return Ok(Rc::new(Box::new(Interger { value: new_float })));
             }
             return Err(());
         }
@@ -45,9 +50,9 @@ pub fn evaluate_prefix_expression(
 
 pub fn evaluate_binary_expression(
     operator: String,
-    left: Box<dyn Object>,
-    right: Box<dyn Object>,
-) -> Result<Box<dyn Object>, ()> {
+    left: Rc<Box<dyn Object>>,
+    right: Rc<Box<dyn Object>>,
+) -> Result<Rc<Box<dyn Object>>, ()> {
     let right_value_any = right.as_any();
     let left_value_any = left.as_any();
     if left.get_type() == ObjectType::INTERGER && right.get_type() == ObjectType::INTERGER {
@@ -66,43 +71,43 @@ pub fn evaluate_binary_expression(
         match operator.as_str() {
             "+" => {
                 let new_value = left_value.value + right_val.value;
-                return Ok(Box::new(Interger { value: new_value }));
+                return Ok(Rc::new(Box::new(Interger { value: new_value })));
             }
             "-" => {
                 let new_value = left_value.value - right_val.value;
-                return Ok(Box::new(Interger { value: new_value }));
+                return Ok(Rc::new(Box::new(Interger { value: new_value })));
             }
             "*" => {
                 let new_value = left_value.value * right_val.value;
-                return Ok(Box::new(Interger { value: new_value }));
+                return Ok(Rc::new(Box::new(Interger { value: new_value })));
             }
             "/" => {
                 let new_value = left_value.value / right_val.value;
-                return Ok(Box::new(Interger { value: new_value }));
+                return Ok(Rc::new(Box::new(Interger { value: new_value })));
             }
             "<" => {
                 let new_value = left_value.value < right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             ">" => {
                 let new_value = left_value.value > right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             "==" => {
                 let new_value = left_value.value == right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             "!=" => {
                 let new_value = left_value.value != right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             ">=" => {
                 let new_value = left_value.value >= right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             "<=" => {
                 let new_value = left_value.value <= right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             _ => return Err(()),
         }
@@ -122,27 +127,27 @@ pub fn evaluate_binary_expression(
         match operator.as_str() {
             "<" => {
                 let new_value = left_value.value < right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             ">" => {
                 let new_value = left_value.value > right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             "==" => {
                 let new_value = left_value.value == right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             "!=" => {
                 let new_value = left_value.value != right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             ">=" => {
                 let new_value = left_value.value >= right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             "<=" => {
                 let new_value = left_value.value <= right_val.value;
-                return Ok(Box::new(BooleanObj { value: new_value }));
+                return Ok(Rc::new(Box::new(BooleanObj { value: new_value })));
             }
             _ => return Err(()),
         }
@@ -152,7 +157,7 @@ pub fn evaluate_binary_expression(
     }
 }
 
-pub fn is_truthy(condition: Box<dyn Object>) -> bool {
+pub fn is_truthy(condition: Rc<Box<dyn Object>>) -> bool {
     let value_any = condition.as_any();
     if let Some(value) = value_any.downcast_ref::<BooleanObj>() {
         return value.value;
@@ -169,10 +174,11 @@ pub fn is_truthy(condition: Box<dyn Object>) -> bool {
 
 pub fn evaluate_block_statements(
     statements: &Vec<Box<dyn Statement>>,
-) -> Result<Box<dyn Object>, ()> {
-    let mut result: Option<Result<Box<dyn Object>, ()>> = None;
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, ()> {
+    let mut result: Option<Result<Rc<Box<dyn Object>>, ()>> = None;
     for statement in statements {
-        result = Some(evaluate_statement(statement));
+        result = Some(evaluate_statement(statement, environment));
         if let Some(res) = &result {
             let value_any = res.as_ref().unwrap().as_any();
             if let Some(_v) = value_any.downcast_ref::<Return>() {
@@ -189,31 +195,36 @@ pub fn evaluate_block_statements(
 
 pub fn evaluate_block_statement(
     block_statement: &Box<BlockStatement>,
-) -> Result<Box<dyn Object>, ()> {
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, ()> {
     let statements = &block_statement.statements;
-    return evaluate_block_statements(statements);
+    return evaluate_block_statements(statements, environment);
 }
 
 pub fn evaluate_block_statement_ref(
     block_statement: &BlockStatement,
-) -> Result<Box<dyn Object>, ()> {
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, ()> {
     let statements = &block_statement.statements;
-    return evaluate_block_statements(statements);
+    return evaluate_block_statements(statements, environment);
 }
 
-pub fn evaluate_condition_expression(if_expression: &IfExpression) -> Result<Box<dyn Object>, ()> {
-    let condition_eval = evaluate_expression(&if_expression.condition).unwrap();
+pub fn evaluate_condition_expression(
+    if_expression: &IfExpression,
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, ()> {
+    let condition_eval = evaluate_expression(&if_expression.condition, environment).unwrap();
     let truthy = is_truthy(condition_eval);
     if truthy {
         let consequence = &if_expression.consequence;
-        return evaluate_block_statement(consequence);
+        return evaluate_block_statement(consequence, environment);
     } else {
         match &if_expression.alternate.as_ref() {
             Some(alternate) => {
-                return evaluate_block_statement(alternate);
+                return evaluate_block_statement(alternate, environment);
             }
             None => {
-                return Ok(Box::new(NULL));
+                return Ok(Rc::new(Box::new(NULL)));
             }
         }
     }
@@ -221,11 +232,48 @@ pub fn evaluate_condition_expression(if_expression: &IfExpression) -> Result<Box
 
 pub fn evaluate_return_statement(
     return_statement: &ReturnStatement,
-) -> Result<Box<dyn Object>, ()> {
-    match evaluate_expression(&return_statement.value) {
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, ()> {
+    match evaluate_expression(&return_statement.value, environment) {
         Ok(value) => {
-            return Ok(Box::new(Return { value: value }));
+            return Ok(Rc::new(Box::new(Return { value: value })));
         }
         Err(e) => return Err(e),
+    }
+}
+
+pub fn evaluate_let_statement(
+    let_statement: &LetStatement,
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, ()> {
+    match evaluate_expression(&let_statement.value, environment) {
+        Ok(value) => {
+            let val = environment.set(let_statement.identifier.value.clone(), value);
+            match val {
+                Some(v) => {
+                    return Ok(v);
+                }
+                None => {
+                    return Err(());
+                }
+            }
+        }
+        Err(e) => return Err(e),
+    }
+}
+
+pub fn evaluate_identifier(
+    identifier: &Identifier,
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, ()> {
+    let ident = identifier.value.clone();
+    let optional_value = environment.get(ident);
+    match optional_value {
+        Some(value) => {
+            return Ok(value);
+        }
+        None => {
+            return Err(());
+        }
     }
 }

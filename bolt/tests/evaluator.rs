@@ -1,28 +1,30 @@
 #![allow(dead_code, unused_imports)]
-use std::any::Any;
+use std::{any::Any, rc::Rc};
 
 use bolt::{
-    evaluator::evaluator::evaluate_statement,
+    evaluator::{
+        environment::Environment,
+        evaluator::{eval, evaluate_statement},
+    },
     object::object::{BooleanObj, Interger, Null, Object, Return},
-    parser::{ast::Statement, parser::Parser},
+    parser::{
+        ast::{Identifier, Statement},
+        parser::Parser,
+    },
 };
 
 #[test]
 fn test_eval() {
     let a = Interger { value: 10.0 };
     let input = "10;";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(format!("{:?}", e), format!("{:?}", a));
-            }
+    let mut environment = Environment::new();
+    let evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(format!("{:?}", eval), format!("{:?}", a));
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 }
@@ -31,18 +33,14 @@ fn test_eval() {
 fn test_integer() {
     //The output of this is same as input 10
     let input = "10";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(e.inspect(), input.to_string());
-            }
+    let mut environment = Environment::new();
+    let evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(eval.inspect(), input.to_string());
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 }
@@ -51,34 +49,24 @@ fn test_integer() {
 fn test_boolean() {
     //The output of this is same as input true
     let input = "true";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(e.inspect(), input.to_string());
-            }
+    let mut environment = Environment::new();
+    let evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(eval.inspect(), input.to_string());
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
-
     let input = "false";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(e.inspect(), input.to_string());
-            }
+    let evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(eval.inspect(), input.to_string());
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 }
@@ -87,69 +75,51 @@ fn test_boolean() {
 fn test_null() {
     //The output of this is same as input null
     let input = "null";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(e.inspect(), input.to_string());
-            }
+    let mut environment = Environment::new();
+    let evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(eval.inspect(), input.to_string());
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 }
 
 #[test]
 fn test_bool_prefix_evaluation() {
-    let input = "!false";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(e.inspect().as_str(), "true");
-            }
+    let mut input = "!false";
+    let mut environment = Environment::new();
+    let mut evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(eval.inspect().as_str(), "true");
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 
-    let input = "!true";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(e.inspect().as_str(), "false");
-            }
+    input = "!true";
+    evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(eval.inspect().as_str(), "false");
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 
-    let input = "!null";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                assert_eq!(e.inspect().as_str(), "true");
-            }
+    input = "!null";
+    evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            assert_eq!(eval.inspect().as_str(), "true");
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 }
@@ -157,23 +127,19 @@ fn test_bool_prefix_evaluation() {
 #[test]
 fn test_minus_prefix_evaluation() {
     let input = "-5";
-    let mut parser = Parser::new(&input);
-    let p = parser.parse_program();
-    match p {
-        Ok(program) => {
-            let stmts = program.stmts;
-            for stmt in stmts {
-                let e = evaluate_statement(&stmt).unwrap();
-                let value_any = e.as_any();
-                if let Some(int) = value_any.downcast_ref::<Interger>() {
-                    assert_eq!(int.value, -5.0);
-                } else {
-                    panic!("Error Downcasting");
-                }
+    let mut environment = Environment::new();
+    let evaluated = eval(input.to_string(), &mut environment);
+    match evaluated {
+        Ok(eval) => {
+            let value_any = eval.as_any();
+            if let Some(int) = value_any.downcast_ref::<Interger>() {
+                assert_eq!(int.value, -5.0);
+            } else {
+                panic!("Error Downcasting");
             }
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("{:?}", e);
         }
     }
 }
@@ -201,23 +167,20 @@ fn test_number_binary_evaluation() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let mut parser = Parser::new(tests[i]);
-        let p = parser.parse_program();
-        match p {
-            Ok(program) => {
-                let stmts = program.stmts;
-                for stmt in stmts {
-                    let e = evaluate_statement(&stmt).unwrap();
-                    let value_any = e.as_any();
-                    if let Some(int) = value_any.downcast_ref::<Interger>() {
-                        assert_eq!(int.value, expected_results[i]);
-                    } else {
-                        panic!("Error Downcasting");
-                    }
+        let mut environment = Environment::new();
+        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
+            eval(tests[i].to_string(), &mut environment);
+        match evaluated {
+            Ok(eval) => {
+                let value_any = eval.as_any();
+                if let Some(int) = value_any.downcast_ref::<Interger>() {
+                    assert_eq!(int.value, expected_results[i]);
+                } else {
+                    panic!("Error Downcasting");
                 }
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("{:?}", e);
             }
         }
     }
@@ -248,23 +211,21 @@ fn test_boolean_binary_evaluation() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let mut parser = Parser::new(tests[i]);
-        let p = parser.parse_program();
-        match p {
-            Ok(program) => {
-                let stmts = program.stmts;
-                for stmt in stmts {
-                    let e = evaluate_statement(&stmt).unwrap();
-                    let value_any = e.as_any();
-                    if let Some(int) = value_any.downcast_ref::<BooleanObj>() {
-                        assert_eq!(int.value, expected_results[i]);
-                    } else {
-                        panic!("Error Downcasting");
-                    }
+        let mut environment = Environment::new();
+        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
+            eval(tests[i].to_string(), &mut environment);
+        match evaluated {
+            Ok(eval) => {
+                let value_any = eval.as_any();
+
+                if let Some(int) = value_any.downcast_ref::<BooleanObj>() {
+                    assert_eq!(int.value, expected_results[i]);
+                } else {
+                    panic!("Error Downcasting");
                 }
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("{:?}", e);
             }
         }
     }
@@ -283,23 +244,21 @@ fn test_conditional_evaluation() {
     let expected_results = vec![10.0, 1.0, 10.0, 20.0, 20.0, 10.0];
     let size = tests.len();
     for i in 0..size {
-        let mut parser = Parser::new(tests[i]);
-        let p = parser.parse_program();
-        match p {
-            Ok(program) => {
-                let stmts = program.stmts;
-                for stmt in stmts {
-                    let e = evaluate_statement(&stmt).unwrap();
-                    let value_any = e.as_any();
-                    if let Some(int) = value_any.downcast_ref::<Interger>() {
-                        assert_eq!(int.value, expected_results[i]);
-                    } else {
-                        panic!("Error Downcasting {:?}", e);
-                    }
+        let mut environment = Environment::new();
+        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
+            eval(tests[i].to_string(), &mut environment);
+        match evaluated {
+            Ok(eval) => {
+                let value_any = eval.as_any();
+
+                if let Some(int) = value_any.downcast_ref::<Interger>() {
+                    assert_eq!(int.value, expected_results[i]);
+                } else {
+                    panic!("Error Downcasting {:?}", eval);
                 }
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("{:?}", e);
             }
         }
     }
@@ -314,23 +273,20 @@ fn test_conditional_evaluation_nil() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let mut parser = Parser::new(tests[i]);
-        let p = parser.parse_program();
-        match p {
-            Ok(program) => {
-                let stmts = program.stmts;
-                for stmt in stmts {
-                    let e = evaluate_statement(&stmt).unwrap();
-                    let value_any = e.as_any();
-                    if let Some(val) = value_any.downcast_ref::<Null>() {
-                        assert_eq!(val.inspect(), String::from("null"));
-                    } else {
-                        panic!("Error Downcasting");
-                    }
+        let mut environment = Environment::new();
+        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
+            eval(tests[i].to_string(), &mut environment);
+        match evaluated {
+            Ok(eval) => {
+                let value_any = eval.as_any();
+                if let Some(val) = value_any.downcast_ref::<Null>() {
+                    assert_eq!(val.inspect(), String::from("null"));
+                } else {
+                    panic!("Error Downcasting");
                 }
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("{:?}", e);
             }
         }
     }
@@ -347,28 +303,56 @@ fn test_return_evaluation() {
     let expected_results = vec![10.0, 10.0, 10.0, 10.0];
     let size = tests.len();
     for i in 0..size {
-        let mut parser = Parser::new(tests[i]);
-        let p = parser.parse_program();
-        match p {
-            Ok(program) => {
-                let stmts = program.stmts;
-                for stmt in stmts {
-                    let e = evaluate_statement(&stmt).unwrap();
-                    let value_any = e.as_any();
-                    if let Some(val) = value_any.downcast_ref::<Return>() {
-                        let value_any = val.value.as_any();
-                        if let Some(val) = value_any.downcast_ref::<Interger>() {
-                            assert_eq!(val.value, expected_results[i]);
-                        } else {
-                            panic!("Error Integer Downcasting");
-                        }
+        let mut environment = Environment::new();
+        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
+            eval(tests[i].to_string(), &mut environment);
+        match evaluated {
+            Ok(eval) => {
+                let value_any = eval.as_any();
+
+                if let Some(val) = value_any.downcast_ref::<Return>() {
+                    let value_any = val.value.as_any();
+                    if let Some(val) = value_any.downcast_ref::<Interger>() {
+                        assert_eq!(val.value, expected_results[i]);
                     } else {
-                        panic!("Error Downcasting");
+                        panic!("Error Integer Downcasting");
                     }
+                } else {
+                    panic!("Error Downcasting");
                 }
             }
             Err(e) => {
-                print!("Error - {:?}", e.message);
+                panic!("{:?}", e);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_environment_evaluation() {
+    let tests = [
+        "let a = 10; a;",
+        "let a = 5 * 5; a;",
+        "let a = 5; let b = a; b;",
+        "let a = 5; let b = a; let c = a + b + 5; c;",
+    ];
+    let expected_results = vec![10.0, 25.0, 5.0, 15.0];
+    let size = tests.len();
+    for i in 0..size {
+        let mut environment = Environment::new();
+        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
+            eval(tests[i].to_string(), &mut environment);
+        match evaluated {
+            Ok(eval) => {
+                let value_any = eval.as_any();
+                if let Some(val) = value_any.downcast_ref::<Interger>() {
+                    assert_eq!(val.value, expected_results[i]);
+                } else {
+                    panic!("Error Downcasting");
+                }
+            }
+            Err(e) => {
+                panic!("{:?}", e);
             }
         }
     }

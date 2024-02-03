@@ -2,6 +2,7 @@
 use super::token;
 use regex::Regex;
 
+#[derive(Debug)]
 pub struct Lexer<'a> {
     input: &'a str,
     input_chars: Vec<char>,

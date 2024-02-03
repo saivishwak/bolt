@@ -1,4 +1,7 @@
-mod repl;
+pub mod cli;
+pub mod commands;
+pub mod repl;
+pub mod types;
 
 fn main() {
     println!(
@@ -13,5 +16,5 @@ fn main() {
     Welcome to Bolt! Language built for learning and educational purpose.
     "###
     );
-    repl::start_repl().unwrap();
+    cli::Cli::init();
 }

@@ -20,7 +20,7 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(source: &'a str) -> Self {
-        let mut p = Self {
+        let mut parser = Self {
             lexer: lexer::Lexer::new(source),
             curr_token: None,
             peek_token: None,
@@ -39,9 +39,9 @@ impl<'a> Parser<'a> {
                 (TokenType::LPAREN, Precedences::CALL as PrecedenceValue),
             ]),
         };
-        p.next_token();
-        p.next_token();
-        p
+        parser.next_token();
+        parser.next_token();
+        parser
     }
 
     fn next_token(&mut self) {
@@ -69,7 +69,11 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
-        let curr_token = self.curr_token.as_ref().unwrap();
+        let mut curr_token = self.curr_token.as_ref().unwrap().clone();
+        if curr_token.token_type == TokenType::SEMICOLON {
+            self.next_token();
+        }
+        curr_token = self.curr_token.as_ref().unwrap().clone();
         match curr_token.token_type {
             token::TokenType::LET => return self.parse_let_statement(),
             token::TokenType::RETURN => self.parse_return_statement(),
@@ -192,18 +196,18 @@ impl<'a> Parser<'a> {
 
     fn parse_expression_statement(&mut self) -> Result<Box<dyn ast::Statement>, ParseError> {
         let curr_token = self.current_token().unwrap();
-        let expr = self
-            .parse_expression(self.get_precedence_value("LOWEST"))
-            .unwrap();
-
-        if self.peek_token.as_ref().unwrap().token_type == token::TokenType::SEMICOLON {
-            self.next_token();
+        match self.parse_expression(self.get_precedence_value("LOWEST")) {
+            Ok(expr) => {
+                self.next_token();
+                return Ok(Box::new(ast::ExpressionStatement {
+                    token: curr_token,
+                    value: expr,
+                }));
+            }
+            Err(e) => {
+                return Err(e);
+            }
         }
-
-        Ok(Box::new(ast::ExpressionStatement {
-            token: curr_token,
-            value: expr,
-        }))
     }
 
     fn parse_expression(
@@ -239,6 +243,12 @@ impl<'a> Parser<'a> {
                     return Err(e);
                 }
             },
+            TokenType::EOF => {
+                return Err(ParseError {
+                    message: String::from("EOF"),
+                    kind: ParseErrorKind::EOF,
+                })
+            }
             _ => {
                 return Err(ParseError {
                     message: String::from(format!(
@@ -520,8 +530,23 @@ impl<'a> Parser<'a> {
 
     pub fn parse_program(&mut self) -> Result<ast::Program, ParseError> {
         let mut program = ast::Program { stmts: vec![] };
-        let stmt = self.parse_statement();
-        program.stmts.push(stmt.unwrap());
+        loop {
+            let statement: Result<Box<dyn Statement>, ParseError> = self.parse_statement();
+            match statement {
+                Ok(value) => {
+                    program.stmts.push(value);
+                }
+                Err(e) => match e.kind {
+                    ParseErrorKind::EOF => {
+                        //Break the loop for EOF
+                        break;
+                    }
+                    _ => {
+                        return Err(e);
+                    }
+                },
+            }
+        }
         Ok(program)
     }
 }

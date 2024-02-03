@@ -1,6 +1,6 @@
 use super::types::ObjectType;
 use core::fmt::Debug;
-use std::any::Any;
+use std::{any::Any, rc::Rc};
 
 pub trait Object
 where
@@ -47,7 +47,7 @@ impl Object for BooleanObj {
 
 #[derive(Debug)]
 pub struct Return {
-    pub value: Box<dyn Object>,
+    pub value: Rc<Box<dyn Object>>,
 }
 
 impl Object for Return {
