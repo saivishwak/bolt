@@ -66,10 +66,9 @@ pub fn lookup_indentifier(indent: &str) -> TokenType {
             return token.clone();
         }
         None => {
-            //
+            return TokenType::IDENTIFIER;
         }
     };
-    return TokenType::IDENTIFIER;
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
+    error::{BoltError, EvaluatorError},
     object::object::{Interger, Object},
     parser::{
         ast::{
@@ -22,21 +23,28 @@ use super::{
     },
 };
 
-pub fn eval(source: String, environment: &mut Environment) -> Result<Rc<Box<dyn Object>>, ()> {
+pub fn eval(
+    source: String,
+    environment: &mut Environment,
+) -> Result<Rc<Box<dyn Object>>, EvaluatorError> {
     let mut parser = Parser::new(&source);
     if let Ok(p) = parser.parse_program() {
         for stmt in p.stmts {
-            let e = evaluate_statement(&stmt, environment).unwrap();
+            let e = evaluate_statement(&stmt, environment)?;
             return Ok(e);
         }
     }
-    return Err(());
+    return Err(EvaluatorError::new(
+        String::from("Error evaluating program"),
+        None,
+        None,
+    ));
 }
 
 pub fn evaluate_expression(
     expression: &Box<dyn Expression>,
     environment: &mut Environment,
-) -> Result<Rc<Box<dyn Object>>, ()> {
+) -> Result<Rc<Box<dyn Object>>, EvaluatorError> {
     let value_any = expression.as_any();
     if let Some(int) = value_any.downcast_ref::<IntegerLiteral>() {
         return Ok(Rc::new(Box::new(Interger { value: int.value })));
@@ -51,7 +59,7 @@ pub fn evaluate_expression(
         return evaluate_prefix_expression(prefix.operator.clone(), right.unwrap());
     } else if let Some(binary) = value_any.downcast_ref::<BinaryExpression>() {
         let left = evaluate_expression(&binary.left, environment);
-        let right: Result<Rc<Box<dyn Object>>, ()> =
+        let right: Result<Rc<Box<dyn Object>>, EvaluatorError> =
             evaluate_expression(&binary.right, environment);
         return evaluate_binary_expression(binary.operator.clone(), left.unwrap(), right.unwrap());
     } else if let Some(if_expression) = value_any.downcast_ref::<IfExpression>() {
@@ -61,14 +69,18 @@ pub fn evaluate_expression(
     } else if let Some(_null) = value_any.downcast_ref::<NullLiteral>() {
         return Ok(Rc::new(Box::new(NULL)));
     } else {
-        return Err(());
+        return Err(EvaluatorError::new(
+            String::from("Expression found found for eval"),
+            None,
+            None,
+        ));
     }
 }
 
 pub fn evaluate_statement(
     statement: &Box<dyn Statement>,
     environment: &mut Environment,
-) -> Result<Rc<Box<dyn Object>>, ()> {
+) -> Result<Rc<Box<dyn Object>>, EvaluatorError> {
     let value_any = statement.as_any();
     if let Some(expr) = value_any.downcast_ref::<ExpressionStatement>() {
         return evaluate_expression(&expr.value, environment);
@@ -79,6 +91,10 @@ pub fn evaluate_statement(
     } else if let Some(let_statement) = value_any.downcast_ref::<LetStatement>() {
         return evaluate_let_statement(let_statement, environment);
     } else {
-        return Err(());
+        return Err(EvaluatorError::new(
+            String::from("Requested Statement type not found"),
+            None,
+            None,
+        ));
     }
 }

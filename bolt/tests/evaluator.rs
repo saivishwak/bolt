@@ -2,6 +2,7 @@
 use std::{any::Any, rc::Rc};
 
 use bolt::{
+    error::EvaluatorError,
     evaluator::{
         environment::Environment,
         evaluator::{eval, evaluate_statement},
@@ -168,8 +169,7 @@ fn test_number_binary_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
-            eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment);
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -212,8 +212,7 @@ fn test_boolean_binary_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
-            eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment);
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -245,7 +244,7 @@ fn test_conditional_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
+        let evaluated: Result<Rc<Box<dyn Object>>, EvaluatorError> =
             eval(tests[i].to_string(), &mut environment);
         match evaluated {
             Ok(eval) => {
@@ -274,8 +273,7 @@ fn test_conditional_evaluation_nil() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
-            eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment);
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -304,8 +302,7 @@ fn test_return_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
-            eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment);
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -340,8 +337,7 @@ fn test_environment_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated: Result<Rc<Box<dyn Object>>, ()> =
-            eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment);
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();

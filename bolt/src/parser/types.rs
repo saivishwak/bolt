@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 pub enum Precedences {
     LOWEST = 0,
     EQUALS = 1,
@@ -10,16 +9,3 @@ pub enum Precedences {
 }
 
 pub type PrecedenceValue = usize;
-
-#[derive(Debug)]
-pub enum ParseErrorKind {
-    GENERIC,
-    INTERNAL,
-    EOF,
-}
-
-#[derive(Debug)]
-pub struct ParseError {
-    pub message: String,
-    pub kind: ParseErrorKind,
-}

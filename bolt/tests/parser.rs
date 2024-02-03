@@ -3,6 +3,7 @@
 use std::{rc::Rc, vec};
 
 use bolt::{
+    error::BoltError,
     lexer::{
         lexer,
         token::{self, Token, TokenType},
@@ -44,7 +45,7 @@ fn test_integer_literal_xpression() {
             assert_eq!(format!("{:?}", stmt), format!("{:?}", actual_stmt));
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.get_message());
         }
     }
 }
@@ -85,7 +86,7 @@ fn test_prefix_minus_expression() {
             assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_stmt));
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.get_message());
         }
     }
 }
@@ -126,7 +127,7 @@ fn test_prefix_bang_expression() {
             assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_stmt));
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.get_message());
         }
     }
 }
@@ -507,7 +508,7 @@ fn test_operator_precedence_parsing() {
                 assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.get_message());
             }
         }
     }
@@ -574,7 +575,7 @@ fn test_boolean_statement() {
                 assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.get_message());
             }
         }
     }
@@ -719,7 +720,7 @@ fn test_boolean_expression() {
                 assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.get_message());
             }
         }
     }
@@ -873,7 +874,7 @@ fn test_grouped_expressions() {
                 assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.get_message());
             }
         }
     }
@@ -1251,7 +1252,7 @@ fn test_if_expression() {
                 assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.get_message());
             }
         }
     }
@@ -1365,7 +1366,7 @@ fn test_function_parameter_parsing() {
                 assert_eq!(format!("{:?}", stmt), format!("{:?}", expected_results[i]));
             }
             Err(e) => {
-                panic!("Error - {:?}", e.message);
+                panic!("Error - {:?}", e.get_message());
             }
         }
     }
@@ -1463,7 +1464,7 @@ fn test_call_expression_parsing() {
             assert_eq!(format!("{:?}", stmt), format!("{:?}", actual_stmt));
         }
         Err(e) => {
-            panic!("Error - {:?}", e.message);
+            panic!("Error - {:?}", e.get_message());
         }
     }
 }
