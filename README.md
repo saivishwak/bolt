@@ -1,20 +1,29 @@
-# Bolt Scripting Language
+# Bolt
 
-## Todo
--   [x] Parse While, Fncs
--   [ ] Add Test Cases
--   [ ] Proper Error Parsing
--   [ ] Refactor code using better standards
+Bolt is a scripting language designed to delve deep into the internals of programming languages. Its dynamic nature allows for an exploration of language concepts, with the lexer, parser, and evaluator all crafted from scratch. Developed using Rust as the host language, Bolt aims to incorporate advanced features such as asynchronous executions for blazing-fast performance in the future.
+
+While not intended for production use at this stage, ongoing research will expand Bolt's capabilities. The project draws heavy inspiration from "Writing An Interpreter In Go" by Thorsten Ball (https://interpreterbook.com) and "Crafting Interpreters" by Robert Nystorm (https://craftinginterpreters.com), both of which offer invaluable insights into compiler construction and language design.
+
+I extend my gratitude to the authors of these seminal works for their invaluable contributions to the field of interpreters and programming languages. I encourage interested individuals to explore these resources further for a deeper understanding of language implementation.
+
+# Todo
+-   [ ] Closures
+-   [ ] Support for recurssion
+-   [ ] Loops (for and while)
+-   [ ] Class / Object syntax 
+-   [ ] Strings
+-   [ ] STL (Standard Library for different data structures)
+-   [ ] More binary operators (^ etc)
 
 # Bolt specification
 
-High level features -
+## High level features
 -   Dynamic typing
--   Automatic Memory Management
+-   Funtion executions
+-   Control Flow
 
 ## Data Types
 -   Boolean - true, false
-
 -   Number - integer or decimal
 ```
 let a = 10;
@@ -22,9 +31,7 @@ let a = 10;
 let b = 10.2;
 ```
 Bolt only has one type which is Number and handles decimals and integers both as double-precision floating point
-
 -   String - "Hello world"
-
 -   NULL - No value
 
 ## Comparison and equality
@@ -43,7 +50,6 @@ Different types can be compared.
 ```
 1 == "a"; // false.
 ```
-
 
 Values of different types are never equivalent in Bolt.
 ```
@@ -67,43 +73,4 @@ print "yes";
 } else {
 print "no";
 }
-
-While -
-
-while (condition) {
-    // Run the code
-}
-
-For loops -
-
-for (var a = 1; a < 10; a = a + 1) {
-    print a;
-}
-```
-
-## Functions
-
-```
-printName(firstName, lastName);
-```
-
-You can also call a function without passing anything to it.
-```
-printName();
-```
-
-Bolt supports Closures as well!
-
-"// or /* */" can be used for comments
-
-```
-// Comments in Bolt
-let a = 10;
-```
-
-Function calls
-```
-add(2, 3);
-
-fn(x, y) { x + y; }(2, 3);
 ```
