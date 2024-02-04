@@ -19,7 +19,7 @@ fn test_eval() {
     let a = Interger { value: 10.0 };
     let input = "10;";
     let mut environment = Environment::new();
-    let evaluated = eval(input.to_string(), &mut environment);
+    let evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(format!("{:?}", eval), format!("{:?}", a));
@@ -35,7 +35,7 @@ fn test_integer() {
     //The output of this is same as input 10
     let input = "10";
     let mut environment = Environment::new();
-    let evaluated = eval(input.to_string(), &mut environment);
+    let evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -51,7 +51,7 @@ fn test_boolean() {
     //The output of this is same as input true
     let input = "true";
     let mut environment = Environment::new();
-    let evaluated = eval(input.to_string(), &mut environment);
+    let evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -61,7 +61,7 @@ fn test_boolean() {
         }
     }
     let input = "false";
-    let evaluated = eval(input.to_string(), &mut environment);
+    let evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -77,7 +77,7 @@ fn test_null() {
     //The output of this is same as input null
     let input = "null";
     let mut environment = Environment::new();
-    let evaluated = eval(input.to_string(), &mut environment);
+    let evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -92,7 +92,7 @@ fn test_null() {
 fn test_bool_prefix_evaluation() {
     let mut input = "!false";
     let mut environment = Environment::new();
-    let mut evaluated = eval(input.to_string(), &mut environment);
+    let mut evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect().as_str(), "true");
@@ -103,7 +103,7 @@ fn test_bool_prefix_evaluation() {
     }
 
     input = "!true";
-    evaluated = eval(input.to_string(), &mut environment);
+    evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect().as_str(), "false");
@@ -114,7 +114,7 @@ fn test_bool_prefix_evaluation() {
     }
 
     input = "!null";
-    evaluated = eval(input.to_string(), &mut environment);
+    evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect().as_str(), "true");
@@ -129,7 +129,7 @@ fn test_bool_prefix_evaluation() {
 fn test_minus_prefix_evaluation() {
     let input = "-5";
     let mut environment = Environment::new();
-    let evaluated = eval(input.to_string(), &mut environment);
+    let evaluated = eval(input.to_string(), &mut environment).unwrap();
     match evaluated {
         Ok(eval) => {
             let value_any = eval.as_any();
@@ -169,7 +169,7 @@ fn test_number_binary_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment).unwrap();
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -212,7 +212,7 @@ fn test_boolean_binary_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment).unwrap();
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -233,8 +233,8 @@ fn test_boolean_binary_evaluation() {
 #[test]
 fn test_conditional_evaluation() {
     let tests = [
-        "if (true) { 10 }",
-        "if (false) { 10 } else { 1 }",
+        "if (true) { 10 };",
+        "if (false) { 10 }; else { 1 }",
         "if (1) { 10 } else { 1 }",
         "if (1 > 2) { 10 } else { 20 }",
         "if (1 < 2) { 20 }",
@@ -245,7 +245,7 @@ fn test_conditional_evaluation() {
     for i in 0..size {
         let mut environment = Environment::new();
         let evaluated: Result<Rc<Box<dyn Object>>, EvaluatorError> =
-            eval(tests[i].to_string(), &mut environment);
+            eval(tests[i].to_string(), &mut environment).unwrap();
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -257,7 +257,7 @@ fn test_conditional_evaluation() {
                 }
             }
             Err(e) => {
-                panic!("{:?}", e);
+                panic!("At Test No - {} - {:?}", i, e);
             }
         }
     }
@@ -273,7 +273,7 @@ fn test_conditional_evaluation_nil() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment).unwrap();
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -302,7 +302,7 @@ fn test_return_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment).unwrap();
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -319,7 +319,7 @@ fn test_return_evaluation() {
                 }
             }
             Err(e) => {
-                panic!("{:?}", e);
+                panic!("At Test No - {} - {:?}", i, e);
             }
         }
     }
@@ -337,7 +337,7 @@ fn test_environment_evaluation() {
     let size = tests.len();
     for i in 0..size {
         let mut environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), &mut environment);
+        let evaluated = eval(tests[i].to_string(), &mut environment).unwrap();
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -348,7 +348,7 @@ fn test_environment_evaluation() {
                 }
             }
             Err(e) => {
-                panic!("{:?}", e);
+                panic!("At Test No - {} - {:?}", i, e);
             }
         }
     }

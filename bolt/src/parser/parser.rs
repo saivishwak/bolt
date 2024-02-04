@@ -60,6 +60,7 @@ impl<'a> Parser<'a> {
         let mut program = ast::Program { stmts: vec![] };
         loop {
             let statement: Result<Box<dyn Statement>, ParseError> = self.parse_statement();
+
             match statement {
                 Ok(value) => {
                     program.stmts.push(value);
@@ -92,7 +93,7 @@ impl<'a> Parser<'a> {
         let current_token = self.get_current_token_and_skip()?;
         let expr = self.parse_expression(self.get_precedence_value("LOWEST"))?;
 
-        self.skip_semicolon_token();
+        self.skip_peek_semicolon_token();
 
         Ok(Box::new(ast::ReturnStatement {
             token: current_token.clone(),
@@ -134,8 +135,7 @@ impl<'a> Parser<'a> {
             identifier: identifier,
             value: expression,
         };
-
-        self.skip_semicolon_token();
+        self.skip_current_semicolon_token();
 
         Ok(Box::new(stmt))
     }
@@ -268,7 +268,8 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        self.skip_semicolon_token();
+        self.skip_current_semicolon_token();
+        self.skip_peek_semicolon_token();
 
         Ok(left_expr)
     }
@@ -336,7 +337,9 @@ impl<'a> Parser<'a> {
         let current_token = self.get_current_token()?;
         let literal = current_token.literal.clone();
         let precedence = self.current_precedence()?;
+        // Skip the operator token
         self.next_token();
+
         let right = self.parse_expression(precedence)?;
         let expression = ast::BinaryExpression {
             token: current_token,
@@ -420,10 +423,10 @@ impl<'a> Parser<'a> {
 
         //Skip the LEFTBRACE Token
         self.next_token();
-
         let consequence = self.parse_block_statement()?;
-        let mut alternate = None;
+        self.skip_current_semicolon_token();
 
+        let mut alternate = None;
         //Parse the else condition as well
         if self.check_current_token_match(TokenType::ELSE) {
             if !self.expect_peek_token_with_type(TokenType::LBRACE) {
@@ -440,6 +443,8 @@ impl<'a> Parser<'a> {
             self.next_token();
             alternate = Some(self.parse_block_statement()?);
         };
+
+        self.skip_current_semicolon_token();
 
         Ok(Box::new(ast::IfExpression {
             token: current_token,
@@ -492,16 +497,16 @@ impl<'a> Parser<'a> {
             }
             let stmt = self.parse_statement()?;
             stmts.push(stmt);
-            self.next_token();
-            if self.get_current_token()?.token_type == TokenType::SEMICOLON {
-                self.next_token();
-            } else {
-                // // ToDo - Better Error handling and also is semicolon madatory in bolt?
-                // return Err(ParseError {
-                //     message: String::from("Semicolon missing for statement"),
-                //     kind: ParseErrorKind::GENERIC,
-                // });
-            }
+
+            // if self.get_current_token()?.token_type == TokenType::SEMICOLON {
+            //     self.next_token();
+            // } else {
+            //     // // ToDo - Better Error handling and also is semicolon madatory in bolt?
+            //     // return Err(ParseError {
+            //     //     message: String::from("Semicolon missing for statement"),
+            //     //     kind: ParseErrorKind::GENERIC,
+            //     // });
+            // }
         }
         Ok(Box::new(BlockStatement {
             token: current_token,
@@ -629,7 +634,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expect_peek_token_with_type(&mut self, token_type: TokenType) -> bool {
-        let flag = self.is_peek_token_match(token_type);
+        let flag = self.check_peek_token_match(token_type);
         if flag {
             self.next_token();
         }
@@ -637,17 +642,17 @@ impl<'a> Parser<'a> {
     }
 
     fn expect_peek_token_with_type_and_no_advance(&mut self, token_type: TokenType) -> bool {
-        let flag = self.is_peek_token_match(token_type);
+        let flag = self.check_peek_token_match(token_type);
         flag
     }
 
     fn skip_peek_token_if_match(&mut self, token_type: TokenType) {
-        if self.is_peek_token_match(token_type) {
+        if self.check_peek_token_match(token_type) {
             self.next_token();
         }
     }
 
-    fn is_peek_token_match(&mut self, token_type: TokenType) -> bool {
+    fn check_peek_token_match(&mut self, token_type: TokenType) -> bool {
         let mut flag = false;
         match self.peek_token.as_ref() {
             Some(token) => {
@@ -663,8 +668,14 @@ impl<'a> Parser<'a> {
         flag
     }
 
-    fn skip_semicolon_token(&mut self) {
-        if self.is_peek_token_match(TokenType::SEMICOLON) {
+    fn skip_peek_semicolon_token(&mut self) {
+        if self.check_peek_token_match(TokenType::SEMICOLON) {
+            self.next_token();
+        }
+    }
+
+    fn skip_current_semicolon_token(&mut self) {
+        if self.check_current_token_match(TokenType::SEMICOLON) {
             self.next_token();
         }
     }

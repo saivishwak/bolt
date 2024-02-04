@@ -1,4 +1,7 @@
-use bolt::evaluator::{environment::Environment, evaluator::eval};
+use bolt::{
+    error::BoltError,
+    evaluator::{environment::Environment, evaluator::eval},
+};
 
 use crate::repl;
 
@@ -11,6 +14,17 @@ pub fn start() {
 pub fn run(path: String) {
     let contents = fs::read_to_string(path).expect("Should have been able to read the file");
     let mut environment = Environment::new();
-    let evaluated = eval(contents, &mut environment).unwrap();
-    println!("{}", evaluated.inspect());
+    match eval(contents, &mut environment) {
+        Some(evaluated) => match evaluated {
+            Ok(result) => {
+                println!("{}", result.inspect());
+            }
+            Err(e) => {
+                panic!("{}", e.get_message());
+            }
+        },
+        None => {
+            panic!("Something went wrong!");
+        }
+    }
 }

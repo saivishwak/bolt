@@ -26,19 +26,35 @@ use super::{
 pub fn eval(
     source: String,
     environment: &mut Environment,
-) -> Result<Rc<Box<dyn Object>>, EvaluatorError> {
+) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
     let mut parser = Parser::new(&source);
-    if let Ok(p) = parser.parse_program() {
-        for stmt in p.stmts {
-            let e = evaluate_statement(&stmt, environment)?;
-            return Ok(e);
+    let mut evaluated_result: Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> = None;
+    match parser.parse_program() {
+        Ok(program) => {
+            for stmt in program.stmts {
+                match evaluate_statement(&stmt, environment) {
+                    Ok(eval) => {
+                        evaluated_result = Some(Ok(eval));
+                    }
+                    Err(e) => {
+                        return Some(Err(EvaluatorError::new(
+                            e.get_message(),
+                            Some(e.get_type()),
+                            None,
+                        )));
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            return Some(Err(EvaluatorError::new(
+                e.get_message(),
+                Some(e.get_type()),
+                None,
+            )));
         }
     }
-    return Err(EvaluatorError::new(
-        String::from("Error evaluating program"),
-        None,
-        None,
-    ));
+    return evaluated_result;
 }
 
 pub fn evaluate_expression(

@@ -262,7 +262,7 @@ pub fn evaluate_condition_expression(
     if_expression: &IfExpression,
     environment: &mut Environment,
 ) -> Result<Rc<Box<dyn Object>>, EvaluatorError> {
-    let condition_eval = evaluate_expression(&if_expression.condition, environment).unwrap();
+    let condition_eval = evaluate_expression(&if_expression.condition, environment)?;
     let truthy = is_truthy(condition_eval);
     if truthy {
         let consequence = &if_expression.consequence;
