@@ -268,6 +268,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
+
         self.skip_current_semicolon_token();
         self.skip_peek_semicolon_token();
 
@@ -312,8 +313,8 @@ impl<'a> Parser<'a> {
 
         Ok(Box::new(ast::FunctionLiteral {
             token: curren_token,
-            parameters: parameters,
-            body: body,
+            parameters: Rc::new(parameters),
+            body: Rc::new(body),
         }))
     }
 
@@ -379,8 +380,9 @@ impl<'a> Parser<'a> {
         let call_expression = ast::CallExpression {
             token: curr_token,
             funtion: left.clone(),
-            parameters: parameters,
+            parameters: Rc::new(parameters),
         };
+
         return Ok(Box::new(call_expression));
     }
 
@@ -490,6 +492,7 @@ impl<'a> Parser<'a> {
         let current_token = self.get_current_token()?;
         let mut stmts: Vec<Box<dyn Statement>> = vec![];
         loop {
+            self.skip_current_semicolon_token();
             let current_token_type = self.get_current_token()?.token_type;
             if current_token_type == TokenType::RBRACE || current_token_type == TokenType::EOF {
                 self.next_token();
@@ -497,16 +500,6 @@ impl<'a> Parser<'a> {
             }
             let stmt = self.parse_statement()?;
             stmts.push(stmt);
-
-            // if self.get_current_token()?.token_type == TokenType::SEMICOLON {
-            //     self.next_token();
-            // } else {
-            //     // // ToDo - Better Error handling and also is semicolon madatory in bolt?
-            //     // return Err(ParseError {
-            //     //     message: String::from("Semicolon missing for statement"),
-            //     //     kind: ParseErrorKind::GENERIC,
-            //     // });
-            // }
         }
         Ok(Box::new(BlockStatement {
             token: current_token,
@@ -653,19 +646,15 @@ impl<'a> Parser<'a> {
     }
 
     fn check_peek_token_match(&mut self, token_type: TokenType) -> bool {
-        let mut flag = false;
         match self.peek_token.as_ref() {
             Some(token) => {
                 if token.token_type == token_type {
-                    flag = true;
-                    Some(token.token_type)
-                } else {
-                    None
+                    return true;
                 }
             }
-            None => None,
+            None => {}
         };
-        flag
+        return false;
     }
 
     fn skip_peek_semicolon_token(&mut self) {

@@ -1274,15 +1274,15 @@ fn test_function_parameter_parsing() {
                     literal: String::from("fn"),
                     line: 0,
                 },
-                parameters: vec![],
-                body: Box::new(BlockStatement {
+                parameters: Rc::new(vec![]),
+                body: Rc::new(Box::new(BlockStatement {
                     token: Token {
                         token_type: TokenType::RBRACE,
                         literal: String::from("}"),
                         line: 0,
                     },
                     statements: vec![],
-                }),
+                })),
             }),
         }),
         Box::new(ExpressionStatement {
@@ -1297,7 +1297,7 @@ fn test_function_parameter_parsing() {
                     literal: String::from("fn"),
                     line: 0,
                 },
-                parameters: vec![
+                parameters: Rc::new(vec![
                     Identifier {
                         token: Token {
                             token_type: TokenType::IDENTIFIER,
@@ -1314,8 +1314,8 @@ fn test_function_parameter_parsing() {
                         },
                         value: String::from("y"),
                     },
-                ],
-                body: Box::new(BlockStatement {
+                ]),
+                body: Rc::new(Box::new(BlockStatement {
                     token: Token {
                         token_type: TokenType::RETURN,
                         literal: String::from("return"),
@@ -1352,7 +1352,7 @@ fn test_function_parameter_parsing() {
                             }),
                         }),
                     })],
-                }),
+                })),
             }),
         }),
     ];
@@ -1394,7 +1394,7 @@ fn test_call_expression_parsing() {
                     },
                     value: String::from("add"),
                 })),
-                parameters: vec![
+                parameters: Rc::new(vec![
                     Box::new(IntegerLiteral {
                         token: Token {
                             token_type: TokenType::INT,
@@ -1451,7 +1451,7 @@ fn test_call_expression_parsing() {
                             value: 5.0,
                         }),
                     }),
-                ],
+                ]),
             });
             let actual_stmt = ExpressionStatement {
                 token: Token {

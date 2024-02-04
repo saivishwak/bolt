@@ -1,6 +1,11 @@
+use crate::{
+    evaluator::environment::Environment,
+    parser::ast::{BlockStatement, Identifier},
+};
+
 use super::types::ObjectType;
 use core::fmt::Debug;
-use std::{any::Any, rc::Rc};
+use std::{any::Any, cell::RefCell, rc::Rc};
 
 pub trait Object
 where
@@ -57,6 +62,34 @@ impl Object for Return {
     fn inspect(&self) -> String {
         return self.value.inspect();
     }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+#[derive(Debug)]
+pub struct Function {
+    pub parameters: Rc<Vec<Identifier>>,
+    pub body: Rc<Box<BlockStatement>>,
+    pub env: Rc<RefCell<Environment>>,
+}
+
+impl Object for Function {
+    fn get_type(&self) -> ObjectType {
+        ObjectType::FUNCTION
+    }
+
+    #[allow(unused_assignments)]
+    fn inspect(&self) -> String {
+        let mut result = String::new();
+        let mut params = vec![];
+        for param in self.parameters.as_ref() {
+            params.push(param.value.clone());
+        }
+        result = format!("fn({}) Body ( {:?} )", params.join(","), self.body);
+        return result;
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }

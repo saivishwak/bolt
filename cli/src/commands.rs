@@ -1,10 +1,8 @@
+use crate::repl;
 use bolt::{
     error::BoltError,
     evaluator::{environment::Environment, evaluator::eval},
 };
-
-use crate::repl;
-
 use std::fs;
 
 pub fn start() {
@@ -13,8 +11,8 @@ pub fn start() {
 
 pub fn run(path: String) {
     let contents = fs::read_to_string(path).expect("Should have been able to read the file");
-    let mut environment = Environment::new();
-    match eval(contents, &mut environment) {
+    let environment = Environment::new();
+    match eval(contents, environment) {
         Some(evaluated) => match evaluated {
             Ok(result) => {
                 println!("{}", result.inspect());

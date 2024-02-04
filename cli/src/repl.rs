@@ -7,7 +7,7 @@ use std::io::{self, Write};
 pub fn start_repl() -> io::Result<()> {
     let mut user_input = String::new();
     let stdin = io::stdin();
-    let mut environment = Environment::new();
+    let environment = Environment::new();
     loop {
         print!(">> ");
         io::stdout().flush().unwrap();
@@ -19,7 +19,7 @@ pub fn start_repl() -> io::Result<()> {
                 return Err(err);
             }
         };
-        match eval(user_input.clone(), &mut environment) {
+        match eval(user_input.clone(), environment.clone()) {
             Some(evaluated) => match evaluated {
                 Ok(result) => {
                     println!("{}", result.inspect());

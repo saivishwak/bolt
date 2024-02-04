@@ -220,8 +220,8 @@ impl Expression for BinaryExpression {}
 #[derive(Debug)]
 pub struct FunctionLiteral {
     pub token: token::Token,
-    pub parameters: Vec<Identifier>,
-    pub body: Box<BlockStatement>,
+    pub parameters: Rc<Vec<Identifier>>,
+    pub body: Rc<Box<BlockStatement>>,
 }
 
 impl Node for FunctionLiteral {
@@ -240,7 +240,7 @@ impl Expression for FunctionLiteral {}
 pub struct CallExpression {
     pub token: token::Token,
     pub funtion: Rc<Box<dyn Expression>>, //Identifier or FunctionLiteral
-    pub parameters: Vec<Box<dyn Expression>>,
+    pub parameters: Rc<Vec<Box<dyn Expression>>>,
 }
 
 impl Node for CallExpression {

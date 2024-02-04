@@ -4,5 +4,6 @@ pub enum ObjectType {
     BOOLEAN,
     NULL,
     STRING,
+    FUNCTION,
     RETURN,
 }
