@@ -1,6 +1,6 @@
 use bolt::{
     error::BoltError,
-    evaluator::{environment::Environment, evaluator::eval},
+    evaluator::{environment::Environment, evaluator::Evaluator},
 };
 use std::io::{self, Write};
 
@@ -19,7 +19,8 @@ pub fn start_repl() -> io::Result<()> {
                 return Err(err);
             }
         };
-        match eval(user_input.clone(), environment.clone()) {
+        let evaluator = Evaluator::new(user_input.clone(), Some(environment.clone()));
+        match evaluator.eval() {
             Some(evaluated) => match evaluated {
                 Ok(result) => {
                     println!("{}", result.inspect());

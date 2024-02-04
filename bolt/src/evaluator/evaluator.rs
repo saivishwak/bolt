@@ -24,38 +24,53 @@ use super::{
     },
 };
 
-pub fn eval(
+pub struct Evaluator {
     source: String,
     environment: Rc<RefCell<Environment>>,
-) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
-    let mut parser = Parser::new(&source);
-    let mut evaluated_result: Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> = None;
-    match parser.parse_program() {
-        Ok(program) => {
-            for stmt in program.stmts {
-                match evaluate_statement(&stmt, environment.clone()) {
-                    Ok(eval) => {
-                        evaluated_result = Some(Ok(eval));
-                    }
-                    Err(e) => {
-                        return Some(Err(EvaluatorError::new(
-                            e.get_message(),
-                            Some(e.get_type()),
-                            None,
-                        )));
+}
+
+impl Evaluator {
+    pub fn new(source: String, environment: Option<Rc<RefCell<Environment>>>) -> Self {
+        let environment = environment.unwrap_or(Environment::new());
+        Self {
+            source: source.clone(),
+            environment: environment,
+        }
+    }
+
+    pub fn eval(&self) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
+        let source = self.source.clone();
+        let environment = self.environment.clone();
+
+        let mut parser = Parser::new(&source);
+        let mut evaluated_result: Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> = None;
+        match parser.parse_program() {
+            Ok(program) => {
+                for stmt in program.stmts {
+                    match evaluate_statement(&stmt, environment.clone()) {
+                        Ok(eval) => {
+                            evaluated_result = Some(Ok(eval));
+                        }
+                        Err(e) => {
+                            return Some(Err(EvaluatorError::new(
+                                e.get_message(),
+                                Some(e.get_type()),
+                                None,
+                            )));
+                        }
                     }
                 }
             }
+            Err(e) => {
+                return Some(Err(EvaluatorError::new(
+                    e.get_message(),
+                    Some(e.get_type()),
+                    None,
+                )));
+            }
         }
-        Err(e) => {
-            return Some(Err(EvaluatorError::new(
-                e.get_message(),
-                Some(e.get_type()),
-                None,
-            )));
-        }
+        return evaluated_result;
     }
-    return evaluated_result;
 }
 
 pub fn evaluate_expression(

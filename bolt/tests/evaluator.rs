@@ -4,8 +4,9 @@ use std::{any::Any, rc::Rc};
 use bolt::{
     error::EvaluatorError,
     evaluator::{
+        self,
         environment::Environment,
-        evaluator::{eval, evaluate_statement},
+        evaluator::{evaluate_statement, Evaluator},
     },
     object::object::{BooleanObj, Interger, Null, Object, Return},
     parser::{
@@ -18,8 +19,8 @@ use bolt::{
 fn test_eval() {
     let a = Interger { value: 10.0 };
     let input = "10;";
-    let environment = Environment::new();
-    let evaluated = eval(input.to_string(), environment).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(format!("{:?}", eval), format!("{:?}", a));
@@ -34,8 +35,9 @@ fn test_eval() {
 fn test_integer() {
     //The output of this is same as input 10
     let input = "10";
-    let environment = Environment::new();
-    let evaluated = eval(input.to_string(), environment).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
+
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -50,8 +52,8 @@ fn test_integer() {
 fn test_boolean() {
     //The output of this is same as input true
     let input = "true";
-    let environment = Environment::new();
-    let evaluated = eval(input.to_string(), environment.clone()).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -61,7 +63,8 @@ fn test_boolean() {
         }
     }
     let input = "false";
-    let evaluated = eval(input.to_string(), environment.clone()).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -76,8 +79,9 @@ fn test_boolean() {
 fn test_null() {
     //The output of this is same as input null
     let input = "null";
-    let environment = Environment::new();
-    let evaluated = eval(input.to_string(), environment).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
+
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect(), input.to_string());
@@ -91,8 +95,9 @@ fn test_null() {
 #[test]
 fn test_bool_prefix_evaluation() {
     let mut input = "!false";
-    let environment = Environment::new();
-    let mut evaluated = eval(input.to_string(), environment.clone()).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
+
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect().as_str(), "true");
@@ -103,7 +108,8 @@ fn test_bool_prefix_evaluation() {
     }
 
     input = "!true";
-    evaluated = eval(input.to_string(), environment.clone()).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect().as_str(), "false");
@@ -114,7 +120,8 @@ fn test_bool_prefix_evaluation() {
     }
 
     input = "!null";
-    evaluated = eval(input.to_string(), environment.clone()).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
             assert_eq!(eval.inspect().as_str(), "true");
@@ -128,8 +135,9 @@ fn test_bool_prefix_evaluation() {
 #[test]
 fn test_minus_prefix_evaluation() {
     let input = "-5";
-    let environment = Environment::new();
-    let evaluated = eval(input.to_string(), environment).unwrap();
+    let evaluator = Evaluator::new(input.to_string(), None);
+    let evaluated = evaluator.eval().unwrap();
+
     match evaluated {
         Ok(eval) => {
             let value_any = eval.as_any();
@@ -168,8 +176,9 @@ fn test_number_binary_evaluation() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), environment).unwrap();
+        let evaluator = Evaluator::new(tests[i].to_string(), None);
+        let evaluated = evaluator.eval().unwrap();
+
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -211,8 +220,9 @@ fn test_boolean_binary_evaluation() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), environment).unwrap();
+        let evaluator = Evaluator::new(tests[i].to_string(), None);
+        let evaluated = evaluator.eval().unwrap();
+
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -243,9 +253,9 @@ fn test_conditional_evaluation() {
     let expected_results = vec![10.0, 1.0, 10.0, 20.0, 20.0, 10.0];
     let size = tests.len();
     for i in 0..size {
-        let environment = Environment::new();
-        let evaluated: Result<Rc<Box<dyn Object>>, EvaluatorError> =
-            eval(tests[i].to_string(), environment).unwrap();
+        let evaluator = Evaluator::new(tests[i].to_string(), None);
+        let evaluated = evaluator.eval().unwrap();
+
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -272,8 +282,9 @@ fn test_conditional_evaluation_nil() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), environment).unwrap();
+        let evaluator = Evaluator::new(tests[i].to_string(), None);
+        let evaluated = evaluator.eval().unwrap();
+
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -301,8 +312,9 @@ fn test_return_evaluation() {
     let expected_results = vec![10.0, 10.0, 10.0, 10.0];
     let size = tests.len();
     for i in 0..size {
-        let environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), environment).unwrap();
+        let evaluator = Evaluator::new(tests[i].to_string(), None);
+        let evaluated = evaluator.eval().unwrap();
+
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -336,8 +348,9 @@ fn test_environment_evaluation() {
     let expected_results = vec![10.0, 25.0, 5.0, 15.0];
     let size = tests.len();
     for i in 0..size {
-        let environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), environment).unwrap();
+        let evaluator = Evaluator::new(tests[i].to_string(), None);
+        let evaluated = evaluator.eval().unwrap();
+
         match evaluated {
             Ok(eval) => {
                 let value_any = eval.as_any();
@@ -364,8 +377,9 @@ fn test_functional_call_evaluation() {
     let expected_results = vec![10.0, 20.0, 30.0];
     let size = tests.len();
     for i in 0..size {
-        let environment = Environment::new();
-        let evaluated = eval(tests[i].to_string(), environment).unwrap();
+        let evaluator = Evaluator::new(tests[i].to_string(), None);
+        let evaluated = evaluator.eval().unwrap();
+
         match evaluated {
             Ok(eval) => {
                 println!("Val - {:?}", eval);
