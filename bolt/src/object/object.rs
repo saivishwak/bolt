@@ -86,7 +86,7 @@ impl Object for Function {
         for param in self.parameters.as_ref() {
             params.push(param.value.clone());
         }
-        result = format!("fn({}) Body ( {:?} )", params.join(","), self.body);
+        result = format!("fn({})", params.join(","));
         return result;
     }
 
