@@ -3,7 +3,7 @@ let b = 20;
 let c = a + b + 20;
 
 let func = fn (x, y, z){
-    return x + y + z;
+    return x * y * z;
 }
 
 func(a, b, c);

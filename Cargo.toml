@@ -4,7 +4,8 @@ resolver = "2"
 
 members = [
     "cli",
-    "bolt"
+    "bolt",
+    "playground/server"
 ]
 
 [workspace.package]

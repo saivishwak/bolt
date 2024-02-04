@@ -1,0 +1,19 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx nodemon --watch src --watch templates -e rs,html --exec cargo run",
+    "tailwind:watch": "npx tailwindcss -i ./assets/css/index.css -o ./assets/css/output.css --watch",
+    "tailwind:build": "npx tailwindcss -i ./assets/css/index.css -o ./assets/css/output.css",
+    "build": "npm run tailwind:build && cargo build"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "tailwindcss": "^3.4.1"
+  }
+}
