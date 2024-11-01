@@ -73,6 +73,21 @@ print "no";
 }
 ```
 
+#### Instructions
+
+Install LLVM and Clang
+
+```shell
+git clone https://github.com/saivishwak/bolt.git
+cd bolt
+```
+
+Using REPL
+
+```shell
+cargo run --bin bolt_cli start
+```
+
 Using interpretter
 
 ```shell
