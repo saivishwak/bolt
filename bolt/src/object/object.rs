@@ -18,7 +18,7 @@ where
 
 #[derive(Debug)]
 pub struct Interger {
-    pub value: f32,
+    pub value: f64,
 }
 
 impl Object for Interger {

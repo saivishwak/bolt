@@ -162,7 +162,7 @@ impl<'a> Parser<'a> {
         //Parse all prefix expresssions
         let mut left_expr: Box<dyn Expression> = match current_token.token_type {
             TokenType::INT => {
-                if let Ok(float_value) = current_token.literal.parse::<f32>() {
+                if let Ok(float_value) = current_token.literal.parse::<f64>() {
                     Box::new(ast::IntegerLiteral {
                         token: current_token.clone(),
                         value: float_value,
@@ -634,12 +634,6 @@ impl<'a> Parser<'a> {
     fn expect_peek_token_with_type_and_no_advance(&mut self, token_type: TokenType) -> bool {
         let flag = self.check_peek_token_match(token_type);
         flag
-    }
-
-    fn skip_peek_token_if_match(&mut self, token_type: TokenType) {
-        if self.check_peek_token_match(token_type) {
-            self.next_token();
-        }
     }
 
     fn check_peek_token_match(&mut self, token_type: TokenType) -> bool {

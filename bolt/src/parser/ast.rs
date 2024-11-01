@@ -111,7 +111,7 @@ impl Expression for Identifier {}
 #[derive(Debug)]
 pub struct IntegerLiteral {
     pub token: token::Token,
-    pub value: f32,
+    pub value: f64,
 }
 
 impl Node for IntegerLiteral {

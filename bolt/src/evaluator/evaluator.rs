@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
+    compiler::{Compiler, CompilerBackend, Factory},
     error::{BoltError, EvaluatorError},
     evaluator::utils::{apply_function, eval_arg_expression},
     object::object::{Function, Interger, Object},
@@ -27,18 +28,51 @@ use super::{
 pub struct Evaluator {
     source: String,
     environment: Rc<RefCell<Environment>>,
+    jit: bool,
+    backend: Option<CompilerBackend>,
 }
 
 impl Evaluator {
-    pub fn new(source: String, environment: Option<Rc<RefCell<Environment>>>) -> Self {
+    pub fn new(
+        source: String,
+        environment: Option<Rc<RefCell<Environment>>>,
+        jit: bool,
+        backend: Option<CompilerBackend>,
+    ) -> Self {
         let environment = environment.unwrap_or(Environment::new());
         Self {
             source: source.clone(),
             environment: environment,
+            jit,
+            backend,
         }
     }
 
-    pub fn eval(&self) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
+    fn eval_jit(&self) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
+        let source = self.source.clone();
+        let environment = self.environment.clone();
+
+        let mut parser = Parser::new(&source);
+        let mut evaluated_result: Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> = None;
+        match parser.parse_program() {
+            Ok(program) => {
+                let mut compiler = Factory::new(self.backend.unwrap(), program);
+                let compile_string = compiler.compile();
+                println!("Compiled {}", compile_string.generate_ir());
+                compiler.clean();
+            }
+            Err(e) => {
+                return Some(Err(EvaluatorError::new(
+                    e.get_message(),
+                    Some(e.get_type()),
+                    None,
+                )));
+            }
+        }
+        return evaluated_result;
+    }
+
+    fn eval_interpretted(&self) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
         let source = self.source.clone();
         let environment = self.environment.clone();
 
@@ -70,6 +104,14 @@ impl Evaluator {
             }
         }
         return evaluated_result;
+    }
+
+    pub fn eval(&self) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
+        if self.jit {
+            return self.eval_jit();
+        } else {
+            return self.eval_interpretted();
+        }
     }
 }
 

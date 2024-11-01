@@ -19,7 +19,7 @@ pub fn start_repl() -> io::Result<()> {
                 return Err(err);
             }
         };
-        let evaluator = Evaluator::new(user_input.clone(), Some(environment.clone()));
+        let evaluator = Evaluator::new(user_input.clone(), Some(environment.clone()), false, None);
         match evaluator.eval() {
             Some(evaluated) => match evaluated {
                 Ok(result) => {

@@ -74,3 +74,19 @@ print "yes";
 print "no";
 }
 ```
+
+Using GCC
+```shell
+cargo run --bin bolt_cli compile --path=./examples/simple.bolt --backend llvm --out="./out/example.ll" --target="x86_64-pc-linux-gnu"
+llc -relocation-model=pic ./out/example.ll -o ./out/example.s
+as ./out/example.s -o ./out/example.o
+gcc ./out/example.o -o ./out/example -lc
+./out/example
+```
+
+Using Clang
+```shell
+cargo run --bin bolt_cli compile --path=./examples/simple.bolt --backend llvm --out="./out/example.ll" --target="x86_64-pc-linux-gnu" --bytecode
+clang ./out/example.ll -o ./out/example
+./out/example
+```

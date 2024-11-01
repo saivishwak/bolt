@@ -36,7 +36,7 @@ async fn playground() -> Html<&'static str> {
 async fn run(Json(payload): Json<RunPayload>) -> Html<&'static str> {
     let code = payload.code.clone();
     let mut evaluated_result = String::new();
-    let evaluator = Evaluator::new(code, None);
+    let evaluator = Evaluator::new(code, None, false, None);
     match evaluator.eval() {
         Some(evaluated) => match evaluated {
             Ok(result) => {

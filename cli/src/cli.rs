@@ -1,3 +1,4 @@
+use bolt::CompilerBackend;
 use clap::Parser;
 
 use crate::{commands, types};
@@ -22,7 +23,21 @@ impl Cli {
             Some(types::Commands::Start {}) => {
                 commands::start();
             }
-            Some(types::Commands::Run { path }) => commands::run(path.clone()),
+            Some(types::Commands::Run { path }) => commands::run(path),
+            Some(types::Commands::Jit { path, backend }) => {
+                let compiler_backend: CompilerBackend = CompilerBackend::from(backend);
+                commands::jit(path, &compiler_backend)
+            }
+            Some(types::Commands::Compile {
+                path,
+                backend,
+                out,
+                target,
+                bytecode,
+            }) => {
+                let compiler_backend = CompilerBackend::from(backend);
+                commands::compile(path, &compiler_backend, out.to_string(), target, *bytecode)
+            }
             None => {
                 panic!("Command Not Found");
             }
