@@ -6,7 +6,8 @@ use std::rc::Rc;
 use std::{env, fs, io, ptr};
 
 use crate::parser::ast::{
-    BinaryExpression, Expression, Identifier, IntegerLiteral, LetStatement, Program,
+    BinaryExpression, BlockStatement, Boolean, Expression, ExpressionStatement, Identifier,
+    IfExpression, IntegerLiteral, LetStatement, Program,
 };
 use crate::{compiler::Compiler, parser::ast::Statement};
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
@@ -50,6 +51,9 @@ pub struct LLVM {
     module: Option<*mut LLVMModule>,
     builder: Option<*mut LLVMBuilder>,
     allocs: HashMap<CString, MapValue>,
+    current_function: Option<LLVMValueRef>,
+    print_function: Option<LLVMValueRef>,
+    print_function_ty: Option<*mut LLVMType>,
 }
 
 impl LLVM {
@@ -61,6 +65,9 @@ impl LLVM {
             builder: None,
             allocs: HashMap::new(),
             filename: filename.into(),
+            current_function: None,
+            print_function: None,
+            print_function_ty: None,
         };
         unsafe {
             instance.set_environment();
@@ -84,6 +91,16 @@ impl LLVM {
         self.create_context();
         self.create_module();
         self.create_builder();
+        let printf_type = LLVMFunctionType(
+            LLVMInt32Type(),
+            [LLVMPointerType(LLVMInt8Type(), 0), LLVMDoubleType()].as_mut_ptr(),
+            2,
+            1,
+        );
+        let printf_fn =
+            LLVMAddFunction(self.module(), b"printf\0".as_ptr() as *const _, printf_type);
+        self.print_function = Some(printf_fn);
+        self.print_function_ty = Some(printf_type)
     }
 
     unsafe fn create_context(&mut self) {
@@ -114,6 +131,7 @@ impl LLVM {
         let function = LLVMAddFunction(module, b"main\0".as_ptr() as *const _, function_type);
         let entry_name = CString::new("entry").unwrap();
         let bb = LLVMAppendBasicBlockInContext(context, function, entry_name.as_ptr());
+        self.current_function = Some(function);
         LLVMPositionBuilderAtEnd(builder, bb);
     }
 
@@ -128,6 +146,8 @@ impl LLVM {
         let value_any = statement.as_any();
         if let Some(stmt) = value_any.downcast_ref::<LetStatement>() {
             self.compile_let_statement(stmt);
+        } else if let Some(expr) = value_any.downcast_ref::<ExpressionStatement>() {
+            self.compile_expression(&expr.value);
         } else {
             panic!("Error compiling statment")
         }
@@ -135,32 +155,39 @@ impl LLVM {
 
     unsafe fn compile_let_statement(&mut self, statement: &LetStatement) {
         let ident = &statement.identifier;
-        let (reference, _, obj_type, skip_alloc) = self.compile_expression(&statement.value);
-        if !skip_alloc {
-            self.alloc(
-                CString::new(ident.value.clone()).unwrap(),
-                reference,
-                obj_type,
-            );
-        } else {
-            let load = LLVMBuildLoad2(
-                self.builder(),
-                obj_type,
-                reference,
-                cstring_from_string(ident.value.clone()).as_ptr(),
-            );
+        match self.compile_expression(&statement.value) {
+            Some(val) => {
+                let (reference, _, obj_type, skip_alloc) = val;
+                if !skip_alloc {
+                    self.alloc(
+                        CString::new(ident.value.clone()).unwrap(),
+                        reference,
+                        obj_type,
+                    );
+                } else {
+                    let load = LLVMBuildLoad2(
+                        self.builder(),
+                        obj_type,
+                        reference,
+                        cstring_from_string(ident.value.clone()).as_ptr(),
+                    );
 
-            self.add_print_function(load);
+                    self.add_print_function(load);
+                }
+            }
+            None => {}
         }
     }
 
     unsafe fn compile_binary_expression(
         &mut self,
-        left: (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool),
-        right: (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool),
+        left: Option<(LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool)>,
+        right: Option<(LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool)>,
         operator: String,
     ) -> (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool) {
         let builder = self.builder();
+        let left = left.unwrap();
+        let right = right.unwrap();
         //TODO Check TYPE
         match operator.as_str() {
             "+" => {
@@ -233,27 +260,86 @@ impl LLVM {
         }
     }
 
+    unsafe fn compile_block(&mut self, block: &Box<BlockStatement>) {
+        for stmt in &block.statements {
+            unsafe { self.compile_statement(stmt) };
+        }
+    }
+
+    unsafe fn compile_if_expression(&mut self, if_expression: &IfExpression) {
+        let builder = self.builder();
+        match self.compile_expression(&if_expression.condition) {
+            Some(condition) => {
+                let if_block =
+                    LLVMAppendBasicBlock(self.current_function.unwrap(), c_str!("if_block"));
+                let else_block =
+                    LLVMAppendBasicBlock(self.current_function.unwrap(), c_str!("else_block"));
+
+                // let casted_condition = LLVMBuildFCmp(
+                //     builder,
+                //     llvm_sys::LLVMRealPredicate::LLVMRealONE,
+                //     condition.0,
+                //     LLVMConstReal(LLVMDoubleType(), 0.0),
+                //     c_str!("float_cmp"),
+                // );
+                // LLVMBuildZExt(
+                //     builder,
+                //     casted_condition,
+                //     LLVMInt1Type(),
+                //     c_str!("cast_to_i1"),
+                // );
+                let loaded_condition = LLVMBuildLoad2(
+                    builder,
+                    LLVMInt1Type(),
+                    condition.0,
+                    c_str!("loaded_condition"),
+                ); //Only reference is allowed
+                LLVMBuildCondBr(builder, loaded_condition, if_block, else_block);
+                LLVMPositionBuilderAtEnd(builder, if_block);
+                self.compile_block(&if_expression.consequence);
+                LLVMBuildRetVoid(builder); //as we are in main function we need to exit the main function in if
+
+                LLVMPositionBuilderAtEnd(builder, else_block);
+                if let Some(else_branch) = &if_expression.alternate {
+                    self.compile_block(else_branch);
+                }
+            }
+            None => {}
+        }
+    }
+
     unsafe fn compile_expression(
         &mut self,
         expr: &Box<dyn Expression>,
-    ) -> (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool) {
+    ) -> Option<(LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool)> {
         let value_any = expr.as_any();
         if let Some(int) = value_any.downcast_ref::<IntegerLiteral>() {
             let f64_type = LLVMDoubleTypeInContext(self.context());
             let reference = LLVMConstReal(f64_type, int.value);
-            return (reference, None, f64_type, false);
+            return Some((reference, None, f64_type, false));
         } else if let Some(binary) = value_any.downcast_ref::<BinaryExpression>() {
             let left = self.compile_expression(&binary.left);
             let right = self.compile_expression(&binary.right);
-            return self.compile_binary_expression(left, right, binary.operator.clone());
+            return Some(self.compile_binary_expression(left, right, binary.operator.clone()));
+        } else if let Some(boolean) = value_any.downcast_ref::<Boolean>() {
+            if boolean.value == true {
+                let true_value = LLVMConstInt(LLVMInt1Type(), 1, 0); // Represents `true`
+                return Some((true_value, None, LLVMInt1Type(), false));
+            } else {
+                let false_value = LLVMConstInt(LLVMInt1Type(), 0, 0);
+                return Some((false_value, None, LLVMInt1Type(), false));
+            }
         } else if let Some(ident) = value_any.downcast_ref::<Identifier>() {
             let map_val = self.compile_identifier(ident);
-            return (
+            return Some((
                 map_val.ident_pointer,
                 Some(map_val.value_pointer),
                 map_val.ident_type,
                 true,
-            );
+            ));
+        } else if let Some(if_expression) = value_any.downcast_ref::<IfExpression>() {
+            self.compile_if_expression(if_expression);
+            return None;
         } else {
             panic!("Error compiling epxression")
         }
@@ -269,15 +355,7 @@ impl LLVM {
 
     unsafe fn add_print_function(&mut self, val: *mut LLVMValue) {
         let builder = self.builder();
-        let module = self.module();
         // Create the printf function type
-        let printf_type = LLVMFunctionType(
-            LLVMInt32Type(),
-            [LLVMPointerType(LLVMInt8Type(), 0), LLVMDoubleType()].as_mut_ptr(),
-            2,
-            1,
-        );
-        let printf_fn = LLVMAddFunction(module, b"printf\0".as_ptr() as *const _, printf_type);
 
         let msg = CString::new("Value: %f\n").unwrap();
         let msg_ptr = LLVMBuildGlobalStringPtr(
@@ -289,8 +367,8 @@ impl LLVM {
         // Call printf using LLVMBuildCall2
         LLVMBuildCall2(
             builder,
-            printf_type,
-            printf_fn,
+            self.print_function_ty.unwrap(),
+            self.print_function.unwrap(),
             [msg_ptr, val].as_mut_ptr(),
             2,
             b"printf_call\0".as_ptr() as *const _,
@@ -312,14 +390,13 @@ impl LLVM {
 }
 
 impl Compiler for LLVM {
-    fn compile(&mut self) -> &mut Self {
+    fn compile(&mut self) {
         let program = self.program.clone();
         unsafe { self.set_main_func() };
         for stmt in &program.stmts {
             unsafe { self.compile_statement(stmt) };
         }
         unsafe { self.set_return_main_func() };
-        self
     }
 
     fn generate_ir(&mut self) -> String {
@@ -345,19 +422,21 @@ impl Compiler for LLVM {
         // Step 1: Generate assembly from LLVM IR
         let output_dir = setup_output_directory().unwrap();
         self.compile();
+
         // Construct the absolute path for the output file
         let output_path = output_dir
-            .join("./example.ll")
+            .join("example.ll")
             .as_os_str()
             .to_string_lossy()
             .to_string();
+
+        self.ir_to_file(output_path.clone());
 
         let assembly_file = output_dir
             .join("./example.s")
             .as_os_str()
             .to_string_lossy()
             .to_string();
-        self.ir_to_file(output_path.clone());
         let status = Command::new("llc")
             .args(&["-relocation-model=pic", &output_path, "-o", &assembly_file])
             .status()

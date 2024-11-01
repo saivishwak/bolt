@@ -3,7 +3,7 @@ use crate::parser::ast::Program;
 use super::LLVM;
 
 pub trait Compiler {
-    fn compile(&mut self) -> &mut Self;
+    fn compile(&mut self);
     fn clean(&mut self);
     fn generate_ir(&mut self) -> String;
     fn ir_to_file(&mut self, filename: String);

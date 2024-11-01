@@ -76,12 +76,12 @@ pub fn compile(
     match parser.parse_program() {
         Ok(program) => {
             let mut compiler = Factory::new(*backend, program, &filename);
-            let compile_string = compiler.compile();
+            compiler.compile();
             if bytecode {
                 println!("Compiling to bytecode");
-                compile_string.bytecode_to_file(out, target)
+                compiler.bytecode_to_file(out, target)
             } else {
-                compile_string.ir_to_file(out);
+                compiler.ir_to_file(out);
             }
         }
         Err(e) => {
