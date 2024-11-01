@@ -19,7 +19,7 @@ use bolt::{
 fn test_eval() {
     let a = Interger { value: 10.0 };
     let input = "10;";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
@@ -35,7 +35,7 @@ fn test_eval() {
 fn test_integer() {
     //The output of this is same as input 10
     let input = "10";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
 
     match evaluated {
@@ -52,7 +52,7 @@ fn test_integer() {
 fn test_boolean() {
     //The output of this is same as input true
     let input = "true";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
@@ -63,7 +63,7 @@ fn test_boolean() {
         }
     }
     let input = "false";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
@@ -79,7 +79,7 @@ fn test_boolean() {
 fn test_null() {
     //The output of this is same as input null
     let input = "null";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
 
     match evaluated {
@@ -95,7 +95,7 @@ fn test_null() {
 #[test]
 fn test_bool_prefix_evaluation() {
     let mut input = "!false";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
 
     match evaluated {
@@ -108,7 +108,7 @@ fn test_bool_prefix_evaluation() {
     }
 
     input = "!true";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
@@ -120,7 +120,7 @@ fn test_bool_prefix_evaluation() {
     }
 
     input = "!null";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "Test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
     match evaluated {
         Ok(eval) => {
@@ -135,7 +135,7 @@ fn test_bool_prefix_evaluation() {
 #[test]
 fn test_minus_prefix_evaluation() {
     let input = "-5";
-    let evaluator = Evaluator::new(input.to_string(), None, false, None);
+    let evaluator = Evaluator::new(input, "test", None, false, None, "");
     let evaluated = evaluator.eval().unwrap();
 
     match evaluated {
@@ -176,7 +176,7 @@ fn test_number_binary_evaluation() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let evaluator = Evaluator::new(tests[i].to_string(), None, false, None);
+        let evaluator = Evaluator::new(tests[i], "test", None, false, None, "");
         let evaluated = evaluator.eval().unwrap();
 
         match evaluated {
@@ -220,7 +220,7 @@ fn test_boolean_binary_evaluation() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let evaluator = Evaluator::new(tests[i].to_string(), None, false, None);
+        let evaluator = Evaluator::new(tests[i], "test", None, false, None, "");
         let evaluated = evaluator.eval().unwrap();
 
         match evaluated {
@@ -253,7 +253,7 @@ fn test_conditional_evaluation() {
     let expected_results = vec![10.0, 1.0, 10.0, 20.0, 20.0, 10.0];
     let size = tests.len();
     for i in 0..size {
-        let evaluator = Evaluator::new(tests[i].to_string(), None, false, None);
+        let evaluator = Evaluator::new(tests[i], "test", None, false, None, "");
         let evaluated = evaluator.eval().unwrap();
 
         match evaluated {
@@ -282,7 +282,7 @@ fn test_conditional_evaluation_nil() {
     ];
     let size = tests.len();
     for i in 0..size {
-        let evaluator = Evaluator::new(tests[i].to_string(), None, false, None);
+        let evaluator = Evaluator::new(tests[i], "test", None, false, None, "");
         let evaluated = evaluator.eval().unwrap();
 
         match evaluated {
@@ -312,7 +312,7 @@ fn test_return_evaluation() {
     let expected_results = vec![10.0, 10.0, 10.0, 10.0];
     let size = tests.len();
     for i in 0..size {
-        let evaluator = Evaluator::new(tests[i].to_string(), None, false, None);
+        let evaluator = Evaluator::new(tests[i], "test", None, false, None, "");
         let evaluated = evaluator.eval().unwrap();
 
         match evaluated {
@@ -348,7 +348,7 @@ fn test_environment_evaluation() {
     let expected_results = vec![10.0, 25.0, 5.0, 15.0];
     let size = tests.len();
     for i in 0..size {
-        let evaluator = Evaluator::new(tests[i].to_string(), None, false, None);
+        let evaluator = Evaluator::new(tests[i], "test", None, false, None, "");
         let evaluated = evaluator.eval().unwrap();
 
         match evaluated {
@@ -377,7 +377,7 @@ fn test_functional_call_evaluation() {
     let expected_results = vec![10.0, 20.0, 30.0];
     let size = tests.len();
     for i in 0..size {
-        let evaluator = Evaluator::new(tests[i].to_string(), None, false, None);
+        let evaluator = Evaluator::new(tests[i], "test", None, false, None, "");
         let evaluated = evaluator.eval().unwrap();
 
         match evaluated {

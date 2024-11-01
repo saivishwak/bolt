@@ -27,39 +27,43 @@ use super::{
 
 pub struct Evaluator {
     source: String,
+    filename: String,
     environment: Rc<RefCell<Environment>>,
     jit: bool,
+    target: String,
     backend: Option<CompilerBackend>,
 }
 
 impl Evaluator {
     pub fn new(
-        source: String,
+        source: &str,
+        filename: &str,
         environment: Option<Rc<RefCell<Environment>>>,
         jit: bool,
         backend: Option<CompilerBackend>,
+        target: &str,
     ) -> Self {
         let environment = environment.unwrap_or(Environment::new());
         Self {
-            source: source.clone(),
+            source: source.into(),
             environment: environment,
             jit,
             backend,
+            target: target.into(),
+            filename: filename.into(),
         }
     }
 
     fn eval_jit(&self) -> Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> {
         let source = self.source.clone();
-        let environment = self.environment.clone();
-
         let mut parser = Parser::new(&source);
-        let mut evaluated_result: Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> = None;
+        let evaluated_result: Option<Result<Rc<Box<dyn Object>>, EvaluatorError>> = None;
         match parser.parse_program() {
             Ok(program) => {
-                let mut compiler = Factory::new(self.backend.unwrap(), program);
-                let compile_string = compiler.compile();
-                println!("Compiled {}", compile_string.generate_ir());
-                compiler.clean();
+                let mut compiler =
+                    Factory::new(self.backend.unwrap(), program, self.filename.as_str());
+                println!("Compiling to bytecode");
+                compiler.bytecode_to_jit(&self.target);
             }
             Err(e) => {
                 return Some(Err(EvaluatorError::new(

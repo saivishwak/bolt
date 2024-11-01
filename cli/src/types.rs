@@ -1,7 +1,5 @@
-use std::default;
-
 use bolt::CompilerBackend;
-use clap::{builder::Str, Subcommand, ValueEnum};
+use clap::{Subcommand, ValueEnum};
 
 #[derive(ValueEnum, Debug, Clone, Copy)]
 pub enum Backend {

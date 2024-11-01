@@ -1,169 +1,130 @@
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
-use std::ptr;
+use std::path::PathBuf;
+use std::process::Command;
 use std::rc::Rc;
-use std::thread::panicking;
+use std::{env, fs, io, ptr};
 
-use crate::evaluator::constants::{FALSE, TRUE};
-use crate::object::object::{Interger, Object};
-use crate::parser::ast::{Boolean, Expression, Identifier, IntegerLiteral, LetStatement, Program};
+use crate::parser::ast::{
+    BinaryExpression, Expression, Identifier, IntegerLiteral, LetStatement, Program,
+};
 use crate::{compiler::Compiler, parser::ast::Statement};
 use llvm_sys::bit_writer::LLVMWriteBitcodeToFile;
 use llvm_sys::prelude::LLVMValueRef;
-use llvm_sys::{core::*, LLVMBuilder, LLVMContext, LLVMModule, LLVMValue};
+use llvm_sys::{core::*, LLVMBuilder, LLVMContext, LLVMModule, LLVMType, LLVMValue};
+
+macro_rules! c_str {
+    ($s:expr) => {
+        concat!($s, "\0").as_ptr() as *const i8
+    };
+}
+
+fn cstring_from_string(str: String) -> CString {
+    CString::new(str).expect("Error Converting to cstring")
+}
+
+struct MapValue {
+    value_pointer: *mut LLVMValue,
+    ident_pointer: *mut LLVMValue,
+    ident_type: *mut LLVMType,
+}
+
+impl MapValue {
+    pub(crate) fn new(
+        value_pointer: *mut LLVMValue,
+        ident_pointer: *mut LLVMValue,
+        ident_type: *mut LLVMType,
+    ) -> Self {
+        Self {
+            value_pointer,
+            ident_pointer,
+            ident_type,
+        }
+    }
+}
 
 pub struct LLVM {
     program: Rc<Program>,
+    filename: String,
     context: Option<*mut LLVMContext>,
     module: Option<*mut LLVMModule>,
     builder: Option<*mut LLVMBuilder>,
-    allocs: HashMap<CString, *mut LLVMValue>,
+    allocs: HashMap<CString, MapValue>,
 }
 
 impl LLVM {
-    pub unsafe fn new(program: Program) -> Self {
+    pub fn new(program: Program, filename: &str) -> Self {
         let mut instance = Self {
             program: Rc::new(program),
             context: None,
             module: None,
             builder: None,
             allocs: HashMap::new(),
+            filename: filename.into(),
         };
-        instance.create_context();
-        instance.create_module();
-        instance.create_builder();
-        instance.set_main_func();
+        unsafe {
+            instance.set_environment();
+        }
         instance
     }
 
-    unsafe fn create_context(&mut self) -> &mut Self {
+    fn builder(&mut self) -> *mut LLVMBuilder {
+        self.builder.unwrap()
+    }
+
+    fn context(&mut self) -> *mut LLVMContext {
+        self.context.unwrap()
+    }
+
+    fn module(&mut self) -> *mut LLVMModule {
+        self.module.unwrap()
+    }
+
+    pub unsafe fn set_environment(&mut self) {
+        self.create_context();
+        self.create_module();
+        self.create_builder();
+    }
+
+    unsafe fn create_context(&mut self) {
         let context = LLVMContextCreate();
         self.context = Some(context);
-        self
     }
 
-    unsafe fn create_module(&mut self) -> &mut Self {
-        let module = LLVMModuleCreateWithName(b"example_module\0".as_ptr() as *const _);
+    unsafe fn create_module(&mut self) {
+        let module_name = format!("{}_module\0", self.filename);
+        let module = LLVMModuleCreateWithName(module_name.as_ptr() as *const _);
         self.module = Some(module);
-        self
     }
 
-    unsafe fn create_builder(&mut self) -> &mut Self {
+    unsafe fn create_builder(&mut self) {
         if let Some(context) = self.context {
             let builder = LLVMCreateBuilderInContext(context);
             self.builder = Some(builder);
         } else {
             panic!("Context not created!")
         }
-        self
     }
 
-    unsafe fn set_main_func(&mut self) -> &mut Self {
-        let int_type = LLVMInt64TypeInContext(self.context.unwrap());
-        let function_type = LLVMFunctionType(int_type, ptr::null_mut(), 0, 0);
-        let function = LLVMAddFunction(
-            self.module.unwrap(),
-            b"main\0".as_ptr() as *const _,
-            function_type,
-        );
+    unsafe fn set_main_func(&mut self) {
+        let context = self.context();
+        let module = self.module();
+        let builder = self.builder();
+        let function_type = LLVMFunctionType(LLVMVoidType(), ptr::null_mut(), 0, 0);
+        let function = LLVMAddFunction(module, b"main\0".as_ptr() as *const _, function_type);
         let entry_name = CString::new("entry").unwrap();
-        let bb =
-            LLVMAppendBasicBlockInContext(self.context.unwrap(), function, entry_name.as_ptr());
-        LLVMPositionBuilderAtEnd(self.builder.unwrap(), bb);
-        self
+        let bb = LLVMAppendBasicBlockInContext(context, function, entry_name.as_ptr());
+        LLVMPositionBuilderAtEnd(builder, bb);
     }
 
-    unsafe fn alloc(&mut self, ident: &Identifier, obj: &Box<dyn Object>) {
-        let context = self.context.unwrap();
-
-        // Create the printf function type
-        let printf_type = LLVMFunctionType(
-            LLVMInt32Type(),
-            [LLVMPointerType(LLVMInt8Type(), 0)].as_mut_ptr(),
-            1,
-            1,
-        );
-        let printf_fn = LLVMAddFunction(
-            self.module.unwrap(),
-            b"printf\0".as_ptr() as *const _,
-            printf_type,
-        );
-        let obj_as_any = obj.as_any();
-        if let Some(val) = obj_as_any.downcast_ref::<Interger>() {
-            let int_type = LLVMFloatTypeInContext(context);
-            let name = CString::new(ident.token.literal.clone()).unwrap();
-            let pointer = LLVMBuildAlloca(self.builder.unwrap(), int_type, name.as_ptr());
-            self.allocs.insert(name.to_owned(), pointer);
-            // Create the message to print
-            let msg = CString::new(format!("Value: {}\n", val.value).as_str()).unwrap();
-            let msg_ptr = LLVMBuildGlobalStringPtr(
-                self.builder.unwrap(),
-                msg.as_ptr() as *const _,
-                b"msg\0".as_ptr() as *const _,
-            );
-
-            // Call printf using LLVMBuildCall2
-            LLVMBuildCall2(
-                self.builder.unwrap(),
-                printf_type,
-                printf_fn,
-                [msg_ptr].as_mut_ptr(),
-                1,
-                b"printf_call\0".as_ptr() as *const _,
-            );
-        } else {
-            panic!("Error downcasting object")
-        }
-    }
-
-    unsafe fn compile_expression(
-        &mut self,
-        expr: &Box<dyn Expression>,
-    ) -> (Rc<Box<dyn Object>>, LLVMValueRef) {
-        let value_any = expr.as_any();
-        if let Some(int) = value_any.downcast_ref::<IntegerLiteral>() {
-            let int_type = LLVMInt64TypeInContext(self.context.unwrap());
-            let reference = LLVMConstInt(int_type, int.value as u64, 0);
-            return (Rc::new(Box::new(Interger { value: int.value })), reference);
-        } else {
-            panic!("Error compiling epxression")
-        }
-    }
-
-    fn compile_let_statement(&mut self, statement: &LetStatement) {
-        // In LLVM, you get your types from functions.
-        let ident = &statement.identifier;
-        let (object, reference) = unsafe { self.compile_expression(&statement.value) };
+    unsafe fn set_return_main_func(&mut self) {
+        let builder = self.builder();
         unsafe {
-            self.alloc(ident, object.as_ref());
-            LLVMBuildRet(self.builder.unwrap(), reference);
+            LLVMBuildRetVoid(builder);
         }
     }
 
-    unsafe fn to_string(&mut self) -> String {
-        let raw_str = LLVMPrintModuleToString(self.module.unwrap());
-        let c_str = unsafe { CStr::from_ptr(raw_str) };
-        let str_value = c_str.to_string_lossy().into_owned();
-        str_value
-    }
-
-    pub unsafe fn dispose(&mut self) {
-        LLVMDisposeBuilder(self.builder.unwrap());
-        LLVMDisposeModule(self.module.unwrap());
-        LLVMContextDispose(self.context.unwrap());
-    }
-}
-
-impl Compiler for LLVM {
-    fn compile(&mut self) -> &mut Self {
-        let program = self.program.clone();
-        for stmt in &program.stmts {
-            self.compile_statement(stmt);
-        }
-        self
-    }
-
-    fn compile_statement(&mut self, statement: &Box<dyn Statement>) {
+    unsafe fn compile_statement(&mut self, statement: &Box<dyn Statement>) {
         let value_any = statement.as_any();
         if let Some(stmt) = value_any.downcast_ref::<LetStatement>() {
             self.compile_let_statement(stmt);
@@ -172,27 +133,310 @@ impl Compiler for LLVM {
         }
     }
 
+    unsafe fn compile_let_statement(&mut self, statement: &LetStatement) {
+        let ident = &statement.identifier;
+        let (reference, _, obj_type, skip_alloc) = self.compile_expression(&statement.value);
+        if !skip_alloc {
+            self.alloc(
+                CString::new(ident.value.clone()).unwrap(),
+                reference,
+                obj_type,
+            );
+        } else {
+            let load = LLVMBuildLoad2(
+                self.builder(),
+                obj_type,
+                reference,
+                cstring_from_string(ident.value.clone()).as_ptr(),
+            );
+
+            self.add_print_function(load);
+        }
+    }
+
+    unsafe fn compile_binary_expression(
+        &mut self,
+        left: (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool),
+        right: (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool),
+        operator: String,
+    ) -> (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool) {
+        let builder = self.builder();
+        //TODO Check TYPE
+        match operator.as_str() {
+            "+" => {
+                // Assuming left and right are of the same type
+                let left_value: *mut LLVMValue;
+                let right_value: *mut LLVMValue;
+                match left.1 {
+                    Some(val) => {
+                        left_value = val;
+                    }
+                    None => {
+                        left_value = left.0;
+                    }
+                }
+                match right.1 {
+                    Some(val) => {
+                        right_value = val;
+                    }
+                    None => {
+                        right_value = right.0;
+                    }
+                }
+                // Perform the addition
+                let sum = LLVMBuildFAdd(builder, left_value, right_value, c_str!("sum"));
+
+                //Return same type as LHS
+                (sum, None, left.2, false)
+            }
+            "*" => {
+                // Assuming left and right are of the same type
+
+                let left_value: *mut LLVMValue;
+                let right_value: *mut LLVMValue;
+                match left.1 {
+                    Some(val) => {
+                        left_value = val;
+                    }
+                    None => {
+                        left_value = left.0;
+                    }
+                }
+                match right.1 {
+                    Some(val) => {
+                        right_value = val;
+                    }
+                    None => {
+                        right_value = right.0;
+                    }
+                }
+
+                // Perform the addition
+                let sum = LLVMBuildFMul(builder, left_value, right_value, c_str!("mul"));
+
+                //Return same type as LHS
+                (sum, None, left.2, false)
+            }
+            _ => {
+                panic!("Error")
+            }
+        }
+    }
+
+    unsafe fn compile_identifier(&mut self, identifier: &Identifier) -> &MapValue {
+        let ident_string = cstring_from_string(identifier.value.clone());
+        match self.allocs.get(&ident_string) {
+            Some(reference) => {
+                return reference;
+            }
+            None => panic!("Variable not found in store, Might not be initialized!"),
+        }
+    }
+
+    unsafe fn compile_expression(
+        &mut self,
+        expr: &Box<dyn Expression>,
+    ) -> (LLVMValueRef, Option<LLVMValueRef>, *mut LLVMType, bool) {
+        let value_any = expr.as_any();
+        if let Some(int) = value_any.downcast_ref::<IntegerLiteral>() {
+            let f64_type = LLVMDoubleTypeInContext(self.context());
+            let reference = LLVMConstReal(f64_type, int.value);
+            return (reference, None, f64_type, false);
+        } else if let Some(binary) = value_any.downcast_ref::<BinaryExpression>() {
+            let left = self.compile_expression(&binary.left);
+            let right = self.compile_expression(&binary.right);
+            return self.compile_binary_expression(left, right, binary.operator.clone());
+        } else if let Some(ident) = value_any.downcast_ref::<Identifier>() {
+            let map_val = self.compile_identifier(ident);
+            return (
+                map_val.ident_pointer,
+                Some(map_val.value_pointer),
+                map_val.ident_type,
+                true,
+            );
+        } else {
+            panic!("Error compiling epxression")
+        }
+    }
+
+    unsafe fn alloc(&mut self, ident: CString, pointer: *mut LLVMValue, obj_type: *mut LLVMType) {
+        let builder = self.builder();
+        let value_index_ptr = LLVMBuildAlloca(builder, obj_type, ident.as_ptr());
+        LLVMBuildStore(builder, pointer, value_index_ptr);
+        self.allocs
+            .insert(ident, MapValue::new(pointer, value_index_ptr, obj_type));
+    }
+
+    unsafe fn add_print_function(&mut self, val: *mut LLVMValue) {
+        let builder = self.builder();
+        let module = self.module();
+        // Create the printf function type
+        let printf_type = LLVMFunctionType(
+            LLVMInt32Type(),
+            [LLVMPointerType(LLVMInt8Type(), 0), LLVMDoubleType()].as_mut_ptr(),
+            2,
+            1,
+        );
+        let printf_fn = LLVMAddFunction(module, b"printf\0".as_ptr() as *const _, printf_type);
+
+        let msg = CString::new("Value: %f\n").unwrap();
+        let msg_ptr = LLVMBuildGlobalStringPtr(
+            builder,
+            msg.as_ptr() as *const _,
+            b"msg\0".as_ptr() as *const _,
+        );
+
+        // Call printf using LLVMBuildCall2
+        LLVMBuildCall2(
+            builder,
+            printf_type,
+            printf_fn,
+            [msg_ptr, val].as_mut_ptr(),
+            2,
+            b"printf_call\0".as_ptr() as *const _,
+        );
+    }
+
+    unsafe fn to_string(&mut self) -> String {
+        let raw_str = LLVMPrintModuleToString(self.module());
+        let c_str = unsafe { CStr::from_ptr(raw_str) };
+        let str_value = c_str.to_string_lossy().into_owned();
+        str_value
+    }
+
+    unsafe fn dispose(&mut self) {
+        LLVMDisposeBuilder(self.builder());
+        LLVMDisposeModule(self.module());
+        LLVMContextDispose(self.context());
+    }
+}
+
+impl Compiler for LLVM {
+    fn compile(&mut self) -> &mut Self {
+        let program = self.program.clone();
+        unsafe { self.set_main_func() };
+        for stmt in &program.stmts {
+            unsafe { self.compile_statement(stmt) };
+        }
+        unsafe { self.set_return_main_func() };
+        self
+    }
+
     fn generate_ir(&mut self) -> String {
         unsafe { self.to_string() }
     }
 
     fn ir_to_file(&mut self, filename: String) {
         let out_file = CString::new(filename.as_str()).unwrap();
-        unsafe { LLVMPrintModuleToFile(self.module.unwrap(), out_file.as_ptr(), ptr::null_mut()) };
+        unsafe { LLVMPrintModuleToFile(self.module(), out_file.as_ptr(), ptr::null_mut()) };
     }
 
     fn bytecode_to_file(&mut self, filename: String, target: &String) {
         let out_file = CString::new(filename.as_str()).unwrap();
+        let name = CString::new(target.as_str()).expect("Error");
         unsafe {
-            LLVMSetTarget(
-                self.module.unwrap(),
-                CString::new(target.as_str()).unwrap().as_ptr(),
-            );
-            LLVMWriteBitcodeToFile(self.module.unwrap(), out_file.as_ptr());
+            LLVMSetTarget(self.module(), name.as_ptr());
+            LLVMWriteBitcodeToFile(self.module(), out_file.as_ptr());
         }
+    }
+
+    //TODO: Fix this bad JIT
+    fn bytecode_to_jit(&mut self, _target: &String) {
+        // Step 1: Generate assembly from LLVM IR
+        let output_dir = setup_output_directory().unwrap();
+        self.compile();
+        // Construct the absolute path for the output file
+        let output_path = output_dir
+            .join("./example.ll")
+            .as_os_str()
+            .to_string_lossy()
+            .to_string();
+
+        let assembly_file = output_dir
+            .join("./example.s")
+            .as_os_str()
+            .to_string_lossy()
+            .to_string();
+        self.ir_to_file(output_path.clone());
+        let status = Command::new("llc")
+            .args(&["-relocation-model=pic", &output_path, "-o", &assembly_file])
+            .status()
+            .unwrap();
+
+        if !status.success() {
+            eprintln!("Failed to generate assembly.");
+        }
+
+        // Step 2: Assemble the assembly code into an object file
+        let object_file = output_dir
+            .join("./example.o")
+            .as_os_str()
+            .to_string_lossy()
+            .to_string();
+        let status = Command::new("as")
+            .args(&[&assembly_file, "-o", &object_file])
+            .status()
+            .unwrap();
+
+        if !status.success() {
+            eprintln!("Failed to assemble.");
+        }
+
+        // Step 3: Link the object file and create an executable
+        let executable_file = output_dir
+            .join("./example")
+            .as_os_str()
+            .to_string_lossy()
+            .to_string();
+        let status = Command::new("gcc")
+            .args(&[&object_file, "-o", &executable_file, "-lc"])
+            .status()
+            .unwrap();
+
+        if !status.success() {
+            eprintln!("Failed to link.");
+        }
+
+        // Step 4: Execute the resulting binary
+        let status = Command::new(&executable_file).output().unwrap();
+
+        print_output("example", &status);
     }
 
     fn clean(&mut self) {
         unsafe { self.dispose() };
     }
+}
+
+fn print_output(command: &str, output: &std::process::Output) {
+    if !output.stdout.is_empty() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        println!("Output from {}:\n{}", command, stdout);
+    }
+    if !output.stderr.is_empty() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Error from {}:\n{}", command, stderr);
+    }
+}
+
+fn setup_output_directory() -> io::Result<PathBuf> {
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+
+    // Construct the absolute path for the output file
+    let output_path = current_dir.join("out");
+    let output_dir = PathBuf::from(output_path);
+
+    // Check if the output directory exists
+    if output_dir.exists() {
+        // If it exists, remove all files in the directory
+        for entry in fs::read_dir(&output_dir)? {
+            let entry = entry?;
+            fs::remove_file(entry.path())?; // Remove the file
+        }
+    } else {
+        // If it doesn't exist, create it
+        fs::create_dir(&output_dir)?;
+    }
+
+    Ok(output_dir)
 }
