@@ -14,6 +14,12 @@ I extend my gratitude to the authors of these seminal works for their invaluable
 - Funtion executions
 - Control Flow
 
+## Installation
+```sh
+cargo build --features=llvm-sys/prefer-dynamic
+cargo run --bin bolt_cli --features=llvm-sys/prefer-dynamic start
+```
+
 ## Data Types
 
 - Boolean - true, false
